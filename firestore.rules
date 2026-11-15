@@ -45,5 +45,20 @@ service cloud.firestore {
         && request.resource.data.ts is number;
       allow delete: if true;
     }
+
+    match /households/{hid}/measurements/{id} {
+      allow get, list: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['turtle','cm','date','note','ts'])
+        && okTurtle(request.resource.data.turtle)
+        && request.resource.data.cm is number
+        && request.resource.data.cm > 0
+        && request.resource.data.cm < 1000
+        && request.resource.data.date is string
+        && request.resource.data.date.size() == 10
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 100
+        && request.resource.data.ts is number;
+      allow delete: if true;
+    }
   }
 }

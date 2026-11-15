@@ -2,6 +2,7 @@ import { firebaseConfig } from "./firebase-config.js";
 import { APP_URL, FS_URL, TURTLES, NAMES, turtleById, markerSvg, $, lsGet, lsSet, lsDel, ymd, todayStr, parse, fmt, fmtShort, fmtG, dayDiff, esc, tort, flash } from "./common.js";
 import { initBaths, startBaths } from "./baths.js";
 import { initFeedings, startFeedings } from "./feedings.js";
+import { initMeasure, startMeasure } from "./measure.js";
 
 
 var INTERVAL_DAYS = 7; // jak často se váží
@@ -41,8 +42,8 @@ function codeFromHash() {
 
 // ---------- úložiště ----------
 // backend.store(název) vrátí sadu záznamů (weights / baths / feedings) se stejným rozhraním.
-var LS_KEYS = { weights: LS_ENTRIES, baths: "zelvy-koupani-v1", feedings: "zelvy-krmeni-v1" };
-var ERR_EL = { weights: "formmsg", baths: "bathmsg", feedings: "feedmsg" };
+var LS_KEYS = { weights: LS_ENTRIES, baths: "zelvy-koupani-v1", measurements: "zelvy-mereni-v1", feedings: "zelvy-krmeni-v1" };
+var ERR_EL = { weights: "formmsg", baths: "bathmsg", feedings: "feedmsg", measurements: "measmsg" };
 
 function localBackend() {
   return {
@@ -66,6 +67,7 @@ function localBackend() {
 var CLEAN = {
   weights: function (r) { return { turtle: r.turtle, grams: r.grams, date: r.date, note: r.note || "", ts: r.ts || Date.now() }; },
   baths: function (r) { return { turtle: r.turtle, date: r.date, note: r.note || "", ts: r.ts || Date.now() }; },
+  measurements: function (r) { return { turtle: r.turtle, cm: r.cm, date: r.date, note: r.note || "", ts: r.ts || Date.now() }; },
   feedings: function (r) { return { turtle: r.turtle, date: r.date, foods: (r.foods || []).slice(0, 20), note: r.note || "", ts: r.ts || Date.now() }; }
 };
 
@@ -365,6 +367,7 @@ function attach() {
   ws.subscribe(onData, onErr);
   startBaths(backend.store("baths"), tabErr("bathmsg", "Koupání"));
   startFeedings(backend.store("feedings"), tabErr("feedmsg", "Krmení"));
+  startMeasure(backend.store("measurements"), tabErr("measmsg", "Měření"));
 }
 function tabErr(id, what) {
   return function (e) {
@@ -379,7 +382,8 @@ function tabErr(id, what) {
 var TAB_SUB = {
   weigh: "Buffy, Otík, Cecík a Drobeček · vážíme jednou týdně",
   bath: "Koupání · zapiš, kdy která želva byla ve vodě",
-  feed: "Krmení · pondělí, středa a pátek"
+  feed: "Krmení · pondělí, středa a pátek",
+  meas: "Měření v cm · jednou za 3 měsíce"
 };
 function showTab(id) {
   if (!TAB_SUB[id]) id = "weigh";
@@ -397,6 +401,7 @@ $("tabs").addEventListener("click", function (e) {
 showTab(lsGet("zelvy-tab"));
 initBaths();
 initFeedings();
+initMeasure();
 
 async function start() {
   render();

@@ -76,8 +76,8 @@ h2{font-size:16px;margin:0 0 8px}
 .msg{font-size:13px;color:var(--mute);margin:6px 0}
 .err{color:var(--warn)}
 .code{font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.5px}
-.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 12px;padding:4px;background:var(--bg2);border:1px solid var(--line);border-radius:16px}
-.tabs button{background:transparent;color:var(--mute);padding:10px 4px;font-weight:600;font-size:15px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:0 0 12px;padding:4px;background:var(--bg2);border:1px solid var(--line);border-radius:16px}
+.tabs button{background:transparent;color:var(--mute);padding:10px 2px;font-weight:600;font-size:13px}
 .tabs button.on{background:var(--accent);color:var(--onaccent);box-shadow:var(--shadow)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{background:var(--bg);color:var(--ink);border:1px solid var(--line);padding:9px 13px;font-weight:600;border-radius:999px}
@@ -154,6 +154,7 @@ h2{font-size:16px;margin:0 0 8px}
   <button type="button" data-tab="weigh" role="tab">⚖ Vážení</button>
   <button type="button" data-tab="bath" role="tab">🛁 Koupání</button>
   <button type="button" data-tab="feed" role="tab">🥬 Krmení</button>
+  <button type="button" data-tab="meas" role="tab">📏 Měření</button>
 </nav>
 
 <section data-tabid="weigh">
@@ -240,6 +241,35 @@ h2{font-size:16px;margin:0 0 8px}
     <div class="sec" id="feedperiod"></div>
     <div class="pills" id="feedsum"></div>
     <ul class="hist" id="feedhist"></ul>
+  </div>
+</section>
+
+<section data-tabid="meas" hidden>
+  <div class="card"><span id="measdue" class="due">Načítám…</span></div>
+  <div class="turtles" id="meascards"></div>
+  <div class="card">
+    <h2>Přidat měření</h2>
+    <form id="measform">
+      <div class="row">
+        <div><label for="mt">Želva</label><select id="mt"></select></div>
+        <div><label for="mc">Délka (cm)</label><input id="mc" type="number" inputmode="decimal" step="0.1" min="0" placeholder="např. 9,5" required></div>
+      </div>
+      <div class="row">
+        <div><label for="md">Datum</label><input id="md" type="date" required></div>
+        <div><label for="mn">Poznámka</label><input id="mn" type="text" maxlength="80" placeholder="nepovinné"></div>
+      </div>
+      <button type="submit">Uložit</button>
+      <div id="measmsg" class="msg"></div>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Vývoj délky</h2>
+    <div class="legend" id="mlegend"></div>
+    <div id="measchart"></div>
+  </div>
+  <div class="card">
+    <h2>Historie měření</h2>
+    <ul class="hist" id="meashist"></ul>
   </div>
 </section>
 
