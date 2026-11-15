@@ -4,6 +4,7 @@ var FB_VER = "10.14.1";
 var APP_URL = "https://www.gstatic.com/firebasejs/" + FB_VER + "/firebase-app.js";
 var FS_URL = "https://www.gstatic.com/firebasejs/" + FB_VER + "/firebase-firestore.js";
 
+var INTERVAL_DAYS = 7; // jak často se váží
 var NAMES = { buffy: "Buffy", otik: "Otík" };
 var SEED = [
   { id: "seed-buffy-20261114", turtle: "buffy", grams: 50, date: "2026-11-14", note: "", ts: 1794657090385 },
@@ -22,7 +23,8 @@ function lsGet(k) { try { return localStorage.getItem(k); } catch (x) { return n
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (x) {} }
 function lsDel(k) { try { localStorage.removeItem(k); } catch (x) {} }
 
-function todayStr() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function ymd(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function todayStr() { return ymd(new Date()); }
 function parse(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
 function fmt(s) { var d = parse(s); return d.getDate() + ". " + (d.getMonth() + 1) + ". " + d.getFullYear(); }
 function fmtShort(s) { var d = parse(s); return d.getDate() + ". " + (d.getMonth() + 1) + "."; }
@@ -120,6 +122,7 @@ function render() {
   renderCards(all);
   renderChart(all);
   renderHist(all);
+  if (!dateDirty && loaded) $("dd").value = defaultDate(all);
   $("seedcard").hidden = !(backend && loaded && all.length === 0 && !seedDismissed());
 }
 
@@ -128,7 +131,7 @@ function renderDue(all) {
   if (!loaded) { el.textContent = "Načítám…"; el.className = "due"; return; }
   if (!all.length) { el.textContent = "Zatím žádné vážení – přidej první."; el.className = "due"; return; }
   var last = all[all.length - 1].date;
-  var due = parse(last); due.setDate(due.getDate() + 14);
+  var due = parse(last); due.setDate(due.getDate() + INTERVAL_DAYS);
   var left = dayDiff(due, parse(todayStr()));
   var ds = due.getDate() + ". " + (due.getMonth() + 1) + ". " + due.getFullYear();
   if (left > 1) { el.textContent = "Další vážení: " + ds + " (za " + left + " dní)"; el.className = "due ok"; }
@@ -248,6 +251,14 @@ $("doseed").addEventListener("click", function () {
 
 // ---------- formulář ----------
 $("dd").value = todayStr();
+// Datum ve formuláři: den dalšího vážení (poslední vážení + interval). Ručně změněné datum se nepřepisuje.
+var dateDirty = false;
+$("dd").addEventListener("input", function () { dateDirty = true; });
+function defaultDate(all) {
+  if (!all.length) return todayStr();
+  var d = parse(all[all.length - 1].date); d.setDate(d.getDate() + INTERVAL_DAYS);
+  return ymd(d);
+}
 $("f").addEventListener("submit", function (ev) {
   ev.preventDefault();
   if (!backend) return;
@@ -255,8 +266,9 @@ $("f").addEventListener("submit", function (ev) {
   if (!(g > 0)) return;
   var rec = { turtle: $("tt").value, grams: g, date: $("dd").value || todayStr(), note: $("nn").value.trim(), ts: Date.now() };
   var fm = $("formmsg"); fm.className = "msg"; fm.textContent = "";
+  dateDirty = false; // po uložení se datum znovu nastaví na další týden
   backend.add(rec).then(function () {
-    $("gg").value = ""; $("nn").value = "";
+    $("gg").value = ""; $("nn").value = ""; render();
     fm.textContent = backend.mode === "cloud" ? "Uloženo ✓ (odešle se, jakmile bude připojení)" : "Uloženo ✓";
     setTimeout(function () { if (fm.textContent.indexOf("Uloženo") === 0) fm.textContent = ""; }, 3000);
   });

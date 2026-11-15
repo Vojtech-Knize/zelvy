@@ -1,6 +1,6 @@
 // Jednoduchý service worker: aplikace se otevře i bez připojení.
 // Stejné soubory: stale-while-revalidate (otevře se hned, na pozadí se stáhne novější verze).
-const CACHE = "zelvy-v2";
+const CACHE = "zelvy-v3";
 const SHELL = ["./", "index.html", "app.js", "firebase-config.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/favicon-32.png"];
 
