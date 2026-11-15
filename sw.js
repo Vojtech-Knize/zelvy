@@ -1,11 +1,12 @@
 // Jednoduchý service worker: aplikace se otevře i bez připojení.
 // Stejné soubory: stale-while-revalidate (otevře se hned, na pozadí se stáhne novější verze).
-const CACHE = "zelvy-v4";
+const CACHE = "zelvy-v5";
 const SHELL = ["./", "index.html", "app.js", "firebase-config.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/favicon-32.png"];
 
 self.addEventListener("install", function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
+  e.waitUntil(// cache: "reload" obejde HTTP cache (GitHub Pages ji drží 10 minut), jinak by se uložila stará verze
+    caches.open(CACHE).then(function (c) { return c.addAll(SHELL.map(function (u) { return new Request(u, { cache: "reload" }); })); }).then(function () { return self.skipWaiting(); }));
 });
 
 self.addEventListener("activate", function (e) {
@@ -26,7 +27,7 @@ self.addEventListener("fetch", function (e) {
   e.respondWith(
     caches.open(CACHE).then(function (cache) {
       return cache.match(req, { ignoreSearch: true }).then(function (hit) {
-        var net = fetch(req).then(function (res) {
+        var net = fetch(sameOrigin ? new Request(req, { cache: "no-cache" }) : req).then(function (res) {
           if (res && res.ok) cache.put(req, res.clone());
           return res;
         }).catch(function () { return hit; });
