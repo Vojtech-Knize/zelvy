@@ -3,6 +3,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Data domácnosti jsou pod dlouhým náhodným kódem, který zná jen rodina.
     // Seznam domácností (kolekce "households") si nikdo načíst nemůže.
+    function okTurtle(t) { return t in ['buffy','otik','cecik','drobecek']; }
+
     match /households/{hid}/weights/{id} {
       allow get, list: if true;
       allow create, update: if request.resource.data.keys().hasOnly(['turtle','grams','date','note','ts'])
@@ -12,6 +14,32 @@ service cloud.firestore {
         && request.resource.data.grams < 100000
         && request.resource.data.date is string
         && request.resource.data.date.size() == 10
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 100
+        && request.resource.data.ts is number;
+      allow delete: if true;
+    }
+
+    match /households/{hid}/baths/{id} {
+      allow get, list: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['turtle','date','note','ts'])
+        && okTurtle(request.resource.data.turtle)
+        && request.resource.data.date is string
+        && request.resource.data.date.size() == 10
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 100
+        && request.resource.data.ts is number;
+      allow delete: if true;
+    }
+
+    match /households/{hid}/feedings/{id} {
+      allow get, list: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['turtle','date','foods','note','ts'])
+        && okTurtle(request.resource.data.turtle)
+        && request.resource.data.date is string
+        && request.resource.data.date.size() == 10
+        && request.resource.data.foods is list
+        && request.resource.data.foods.size() <= 20
         && request.resource.data.note is string
         && request.resource.data.note.size() <= 100
         && request.resource.data.ts is number;

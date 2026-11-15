@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Vážení želv – Buffy, Otík, Cecík a Drobeček</title>
+<title>Želvy – vážení, koupání, krmení</title>
 <meta name="theme-color" content="#fdf3e3">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -76,6 +76,19 @@ h2{font-size:16px;margin:0 0 8px}
 .msg{font-size:13px;color:var(--mute);margin:6px 0}
 .err{color:var(--warn)}
 .code{font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.5px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 12px;padding:4px;background:var(--bg2);border:1px solid var(--line);border-radius:16px}
+.tabs button{background:transparent;color:var(--mute);padding:10px 4px;font-weight:600;font-size:15px}
+.tabs button.on{background:var(--accent);color:var(--onaccent);box-shadow:var(--shadow)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--bg);color:var(--ink);border:1px solid var(--line);padding:9px 13px;font-weight:600;border-radius:999px}
+.chip.on{background:var(--c,var(--accent));border-color:var(--c,var(--accent));color:var(--onaccent)}
+.chip.food.on{background:var(--otik);border-color:var(--otik)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:3px;background:var(--bg);border:1px solid var(--line);border-radius:12px;margin-bottom:10px}
+.seg button{background:transparent;color:var(--mute);padding:8px;font-weight:600}
+.seg button.on{background:var(--accent);color:var(--onaccent)}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.pill{font-size:13px;border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 10px;border-left:4px solid var(--c,var(--accent))}
+.sec{font-size:13px;color:var(--mute);margin:0 0 6px}
 .foot{margin-top:18px;text-align:center;color:var(--mute);font-size:13px}
 .foot svg.walk{width:100%;max-width:340px;display:block;margin:0 auto 4px}
 </style>
@@ -119,8 +132,8 @@ h2{font-size:16px;margin:0 0 8px}
 <div class="hero">
   <svg class="hero-t" viewBox="0 0 120 80" role="img" aria-label="Želva"><use href="#tort"/></svg>
   <div>
-    <h1>Vážení želv</h1>
-    <div class="sub">Buffy, Otík, Cecík a Drobeček · vážíme jednou týdně</div>
+    <h1>Naše želvy</h1>
+    <div class="sub" id="sub"></div>
   </div>
 </div>
 
@@ -135,7 +148,16 @@ h2{font-size:16px;margin:0 0 8px}
   <div id="setupmsg" class="msg"></div>
 </div>
 
-<div class="card"><span id="due" class="due">Načítám…</span><div id="status" class="msg"></div></div>
+<div id="status" class="msg"></div>
+
+<nav class="tabs" id="tabs" role="tablist">
+  <button type="button" data-tab="weigh" role="tab">⚖ Vážení</button>
+  <button type="button" data-tab="bath" role="tab">🛁 Koupání</button>
+  <button type="button" data-tab="feed" role="tab">🥬 Krmení</button>
+</nav>
+
+<section data-tabid="weigh">
+<div class="card"><span id="due" class="due">Načítám…</span></div>
 
 <div class="card" id="seedcard" hidden>
   <h2>Přenést první vážení</h2>
@@ -173,6 +195,53 @@ h2{font-size:16px;margin:0 0 8px}
   <h2>Historie</h2>
   <ul class="hist" id="hist"></ul>
 </div>
+
+</section>
+
+<section data-tabid="bath" hidden>
+  <div class="turtles" id="bathlast"></div>
+  <div class="card">
+    <h2>Zapsat koupání</h2>
+    <form id="bathform">
+      <div><label>Která želva se koupala</label><div class="chips" id="bathchips"></div></div>
+      <div><label for="bd">Datum</label><input id="bd" type="date" required></div>
+      <button type="submit">Uložit koupání</button>
+      <div id="bathmsg" class="msg"></div>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Přehled koupání</h2>
+    <div class="seg" id="bathseg"></div>
+    <div class="sec" id="bathperiod"></div>
+    <div class="pills" id="bathsum"></div>
+    <ul class="hist" id="bathhist"></ul>
+  </div>
+</section>
+
+<section data-tabid="feed" hidden>
+  <div class="card"><span id="feednext" class="due">Načítám…</span></div>
+  <div class="card">
+    <h2>Zapsat krmení</h2>
+    <form id="feedform">
+      <div><label for="fd">Den krmení (po, st, pá)</label><select id="fd"></select></div>
+      <div><label>Kdo byl krmen</label><div class="chips" id="feedturtles"></div></div>
+      <div><label>Čím</label><div class="chips" id="foodchips"></div></div>
+      <div class="row auto" style="margin-top:0">
+        <input id="customfood" type="text" maxlength="30" placeholder="Jiné krmení (vlastní)" autocomplete="off">
+        <button type="button" id="addcustom">Přidat</button>
+      </div>
+      <button type="submit">Uložit krmení</button>
+      <div id="feedmsg" class="msg"></div>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Přehled krmení</h2>
+    <div class="seg" id="feedseg"></div>
+    <div class="sec" id="feedperiod"></div>
+    <div class="pills" id="feedsum"></div>
+    <ul class="hist" id="feedhist"></ul>
+  </div>
+</section>
 
 <div class="card" id="settings" hidden>
   <h2>Sdílení s druhým telefonem</h2>

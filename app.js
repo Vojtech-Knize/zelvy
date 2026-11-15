@@ -1,26 +1,10 @@
 import { firebaseConfig } from "./firebase-config.js";
+import { APP_URL, FS_URL, TURTLES, NAMES, turtleById, markerSvg, $, lsGet, lsSet, lsDel, ymd, todayStr, parse, fmt, fmtShort, fmtG, dayDiff, esc, tort, flash } from "./common.js";
+import { initBaths, startBaths } from "./baths.js";
+import { initFeedings, startFeedings } from "./feedings.js";
 
-var FB_VER = "10.14.1";
-var APP_URL = "https://www.gstatic.com/firebasejs/" + FB_VER + "/firebase-app.js";
-var FS_URL = "https://www.gstatic.com/firebasejs/" + FB_VER + "/firebase-firestore.js";
 
 var INTERVAL_DAYS = 7; // jak často se váží
-var TURTLES = [
-  { id: "buffy", name: "Buffy", sex: "♀", color: "var(--buffy)", marker: "circle", acc: "bow", where: "" },
-  { id: "otik", name: "Otík", sex: "♂", color: "var(--otik)", marker: "square", acc: "", where: "" },
-  { id: "cecik", name: "Cecík", sex: "♀", color: "var(--cecik)", marker: "triangle", acc: "flower", where: "ze školky" },
-  { id: "drobecek", name: "Drobeček", sex: "♂", color: "var(--drobecek)", marker: "diamond", acc: "", where: "ze školky" }
-];
-var NAMES = {};
-TURTLES.forEach(function (t) { NAMES[t.id] = t.name; });
-function turtleById(id) { for (var i = 0; i < TURTLES.length; i++) if (TURTLES[i].id === id) return TURTLES[i]; return TURTLES[1]; }
-function markerSvg(m, color, size) {
-  var h = size / 2, c = 'fill="' + color + '"';
-  if (m === "square") return '<rect x="' + (h * .25) + '" y="' + (h * .25) + '" width="' + (size * .75) + '" height="' + (size * .75) + '" rx="1.5" ' + c + '/>';
-  if (m === "triangle") return '<polygon points="' + h + ',' + (h * .1) + ' ' + (size * .95) + ',' + (size * .92) + ' ' + (size * .05) + ',' + (size * .92) + '" ' + c + '/>';
-  if (m === "diamond") return '<polygon points="' + h + ',' + (size * .05) + ' ' + (size * .95) + ',' + h + ' ' + h + ',' + (size * .95) + ' ' + (size * .05) + ',' + h + '" ' + c + '/>';
-  return '<circle cx="' + h + '" cy="' + h + '" r="' + (h * .85) + '" ' + c + '/>';
-}
 var SEED = [
   { id: "seed-buffy-20261114", turtle: "buffy", grams: 50, date: "2026-11-14", note: "", ts: 1794657090385 },
   { id: "seed-otik-20261114", turtle: "otik", grams: 53, date: "2026-11-14", note: "", ts: 1794657098182 }
@@ -31,26 +15,9 @@ var LS_CODE = "zelvy-kod";
 var entries = [];
 var loaded = false;
 var backend = null;
+var ws = null; // úložiště vážení
 var timer = null;
 
-function $(id) { return document.getElementById(id); }
-function lsGet(k) { try { return localStorage.getItem(k); } catch (x) { return null; } }
-function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (x) {} }
-function lsDel(k) { try { localStorage.removeItem(k); } catch (x) {} }
-
-function ymd(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
-function todayStr() { return ymd(new Date()); }
-function parse(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
-function fmt(s) { var d = parse(s); return d.getDate() + ". " + (d.getMonth() + 1) + ". " + d.getFullYear(); }
-function fmtShort(s) { var d = parse(s); return d.getDate() + ". " + (d.getMonth() + 1) + "."; }
-function fmtG(n) { return (Math.round(n * 10) / 10).toString().replace(".", ","); }
-function dayDiff(a, b) { return Math.round((a - b) / 86400000); }
-function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
-function tort(k, cls) {
-  var t = turtleById(k);
-  var acc = t.acc === "bow" ? '<use href="#bow"/>' : (t.acc === "flower" ? '<use href="#flower"/>' : '');
-  return '<svg class="' + t.id + ' ' + (cls || "") + '" viewBox="0 0 120 80" aria-hidden="true"><use href="#tort"/>' + acc + '</svg>';
-}
 
 // ---------- kód domácnosti ----------
 var ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
@@ -73,19 +40,34 @@ function codeFromHash() {
 }
 
 // ---------- úložiště ----------
+// backend.store(název) vrátí sadu záznamů (weights / baths / feedings) se stejným rozhraním.
+var LS_KEYS = { weights: LS_ENTRIES, baths: "zelvy-koupani-v1", feedings: "zelvy-krmeni-v1" };
+var ERR_EL = { weights: "formmsg", baths: "bathmsg", feedings: "feedmsg" };
+
 function localBackend() {
-  var list;
-  try { list = JSON.parse(lsGet(LS_ENTRIES) || "[]"); } catch (x) { list = []; }
-  var cb = null;
-  function save() { lsSet(LS_ENTRIES, JSON.stringify(list)); if (cb) cb(list.slice(), false); }
   return {
     mode: "local",
-    subscribe: function (onData) { cb = onData; onData(list.slice(), false); },
-    add: function (rec) { rec.id = "l" + Date.now(); list.push(rec); save(); return Promise.resolve(); },
-    remove: function (id) { list = list.filter(function (e) { return e.id !== id; }); save(); return Promise.resolve(); },
-    seed: function (items) { items.forEach(function (s) { if (!list.some(function (e) { return e.id === s.id; })) list.push(s); }); save(); return Promise.resolve(); }
+    store: function (name) {
+      var key = LS_KEYS[name], list;
+      try { list = JSON.parse(lsGet(key) || "[]"); } catch (x) { list = []; }
+      var cb = null;
+      function save() { lsSet(key, JSON.stringify(list)); if (cb) cb(list.slice(), false); }
+      return {
+        subscribe: function (onData) { cb = onData; onData(list.slice(), false); },
+        add: function (rec) { rec.id = "l" + Date.now() + Math.random().toString(36).slice(2, 6); list.push(rec); save(); return Promise.resolve(); },
+        set: function (id, rec) { rec.id = id; list = list.filter(function (e) { return e.id !== id; }); list.push(rec); save(); return Promise.resolve(); },
+        remove: function (id) { list = list.filter(function (e) { return e.id !== id; }); save(); return Promise.resolve(); },
+        seed: function (items) { items.forEach(function (s) { if (!list.some(function (e) { return e.id === s.id; })) list.push(s); }); save(); return Promise.resolve(); }
+      };
+    }
   };
 }
+
+var CLEAN = {
+  weights: function (r) { return { turtle: r.turtle, grams: r.grams, date: r.date, note: r.note || "", ts: r.ts || Date.now() }; },
+  baths: function (r) { return { turtle: r.turtle, date: r.date, note: r.note || "", ts: r.ts || Date.now() }; },
+  feedings: function (r) { return { turtle: r.turtle, date: r.date, foods: (r.foods || []).slice(0, 20), note: r.note || "", ts: r.ts || Date.now() }; }
+};
 
 async function firestoreBackend(code) {
   var mods = await Promise.all([import(APP_URL), import(FS_URL)]);
@@ -97,30 +79,35 @@ async function firestoreBackend(code) {
   } catch (x) {
     db = F.getFirestore(app);
   }
-  var col = F.collection(db, "households", code, "weights");
-  function clean(rec) { return { turtle: rec.turtle, grams: rec.grams, date: rec.date, note: rec.note || "", ts: rec.ts || Date.now() }; }
   return {
     mode: "cloud",
-    subscribe: function (onData, onErr) {
-      F.onSnapshot(F.query(col, F.orderBy("date")), function (snap) {
-        onData(snap.docs.map(function (d) { var o = d.data(); o.id = d.id; return o; }), snap.metadata.fromCache);
-      }, onErr);
-    },
-    // Zápis se nečeká na server: offline se uloží do paměti zařízení a odešle se po připojení.
-    add: function (rec) { F.addDoc(col, clean(rec)).catch(showWriteError); return Promise.resolve(); },
-    remove: function (id) { F.deleteDoc(F.doc(col, id)).catch(showWriteError); return Promise.resolve(); },
-    seed: function (items) {
-      items.forEach(function (s) { F.setDoc(F.doc(col, s.id), clean(s)).catch(showWriteError); });
-      return Promise.resolve();
+    store: function (name) {
+      var col = F.collection(db, "households", code, name), clean = CLEAN[name];
+      var fail = function (e) { showWriteError(name, e); };
+      return {
+        subscribe: function (onData, onErr) {
+          F.onSnapshot(F.query(col, F.orderBy("date")), function (snap) {
+            onData(snap.docs.map(function (d) { var o = d.data(); o.id = d.id; return o; }), snap.metadata.fromCache);
+          }, onErr);
+        },
+        // Zápis se nečeká na server: offline se uloží do paměti zařízení a odešle se po připojení.
+        add: function (rec) { F.addDoc(col, clean(rec)).catch(fail); return Promise.resolve(); },
+        set: function (id, rec) { F.setDoc(F.doc(col, id), clean(rec)).catch(fail); return Promise.resolve(); },
+        remove: function (id) { F.deleteDoc(F.doc(col, id)).catch(fail); return Promise.resolve(); },
+        seed: function (items) {
+          items.forEach(function (s) { F.setDoc(F.doc(col, s.id), clean(s)).catch(fail); });
+          return Promise.resolve();
+        }
+      };
     }
   };
 }
 
-function showWriteError(e) {
-  var fm = $("formmsg");
+function showWriteError(name, e) {
+  var fm = $(ERR_EL[name] || "formmsg");
   fm.className = "msg err";
   fm.textContent = (e && e.code === "permission-denied")
-    ? "Databáze zápis odmítla. Zkontroluj pravidla ve Firebase."
+    ? "Databáze zápis odmítla. V databázi (Firebase) je potřeba doplnit pravidla pro tuto záložku."
     : "Uložení se nepovedlo. Zkus to znovu.";
 }
 
@@ -267,7 +254,7 @@ function renderHist(all) {
     var armed = false, tm = null;
     b.addEventListener("click", function () {
       if (!armed) { armed = true; b.textContent = "Opravdu?"; b.classList.add("sure"); tm = setTimeout(function () { armed = false; b.textContent = "Smazat"; b.classList.remove("sure"); }, 3000); return; }
-      clearTimeout(tm); backend.remove(e.id);
+      clearTimeout(tm); ws.remove(e.id);
     });
     li.appendChild(b); ul.appendChild(li);
   });
@@ -277,7 +264,7 @@ function renderHist(all) {
 function seedDismissed() { return lsGet("zelvy-seed-done") === "1"; }
 $("doseed").addEventListener("click", function () {
   $("doseed").disabled = true;
-  backend.seed(SEED).then(function () { lsSet("zelvy-seed-done", "1"); $("seedcard").hidden = true; });
+  ws.seed(SEED).then(function () { lsSet("zelvy-seed-done", "1"); $("seedcard").hidden = true; });
 });
 
 // ---------- formulář ----------
@@ -300,13 +287,13 @@ function defaultDate(all) {
 })();
 $("f").addEventListener("submit", function (ev) {
   ev.preventDefault();
-  if (!backend) return;
+  if (!ws) return;
   var g = parseFloat($("gg").value.replace(",", "."));
   if (!(g > 0)) return;
   var rec = { turtle: $("tt").value, grams: g, date: $("dd").value || todayStr(), note: $("nn").value.trim(), ts: Date.now() };
   var fm = $("formmsg"); fm.className = "msg"; fm.textContent = "";
   dateDirty = false; // po uložení se datum znovu nastaví na další týden
-  backend.add(rec).then(function () {
+  ws.add(rec).then(function () {
     $("gg").value = ""; $("nn").value = ""; render();
     fm.textContent = backend.mode === "cloud" ? "Uloženo ✓ (odešle se, jakmile bude připojení)" : "Uloženo ✓";
     setTimeout(function () { if (fm.textContent.indexOf("Uloženo") === 0) fm.textContent = ""; }, 3000);
@@ -372,6 +359,45 @@ function onErr(e) {
   render();
 }
 
+// po připojení databáze: vážení + koupání + krmení
+function attach() {
+  ws = backend.store("weights");
+  ws.subscribe(onData, onErr);
+  startBaths(backend.store("baths"), tabErr("bathmsg", "Koupání"));
+  startFeedings(backend.store("feedings"), tabErr("feedmsg", "Krmení"));
+}
+function tabErr(id, what) {
+  return function (e) {
+    var el = $(id); el.className = "msg err";
+    el.textContent = (e && e.code === "permission-denied")
+      ? what + ": databáze data nepustila. V databázi (Firebase) je potřeba doplnit nová pravidla."
+      : what + ": data se nepodařilo načíst.";
+  };
+}
+
+// ---------- záložky ----------
+var TAB_SUB = {
+  weigh: "Buffy, Otík, Cecík a Drobeček · vážíme jednou týdně",
+  bath: "Koupání · zapiš, kdy která želva byla ve vodě",
+  feed: "Krmení · pondělí, středa a pátek"
+};
+function showTab(id) {
+  if (!TAB_SUB[id]) id = "weigh";
+  Array.prototype.forEach.call(document.querySelectorAll("[data-tabid]"), function (s) { s.hidden = s.dataset.tabid !== id; });
+  Array.prototype.forEach.call(document.querySelectorAll("#tabs button"), function (b) {
+    var on = b.dataset.tab === id; b.classList.toggle("on", on); b.setAttribute("aria-selected", on ? "true" : "false");
+  });
+  $("sub").textContent = TAB_SUB[id];
+  lsSet("zelvy-tab", id);
+}
+$("tabs").addEventListener("click", function (e) {
+  var b = e.target.closest("button");
+  if (b) { showTab(b.dataset.tab); window.scrollTo(0, 0); }
+});
+showTab(lsGet("zelvy-tab"));
+initBaths();
+initFeedings();
+
 async function start() {
   render();
   if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").catch(function () {}); }
@@ -379,7 +405,7 @@ async function start() {
   if (!firebaseConfig) {
     backend = localBackend();
     $("status").textContent = "Sdílení zatím není nastavené, data jsou jen v tomto zařízení.";
-    backend.subscribe(onData, onErr);
+    attach();
     loaded = true; render();
     return;
   }
@@ -396,14 +422,14 @@ async function start() {
 
   try {
     backend = await firestoreBackend(code);
-    backend.subscribe(onData, onErr);
+    attach();
   } catch (e) {
     clearTimeout(timer);
     loaded = true;
     backend = localBackend();
     $("status").className = "msg err";
     $("status").textContent = "Sdílení se nepodařilo spustit (offline?). Data se teď ukládají jen v tomto zařízení.";
-    backend.subscribe(onData, onErr);
+    attach();
     render();
   }
 }
