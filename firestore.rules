@@ -6,7 +6,7 @@ service cloud.firestore {
     match /households/{hid}/weights/{id} {
       allow get, list: if true;
       allow create, update: if request.resource.data.keys().hasOnly(['turtle','grams','date','note','ts'])
-        && request.resource.data.turtle in ['buffy','otik']
+        && request.resource.data.turtle in ['buffy','otik','cecik','drobecek']
         && request.resource.data.grams is number
         && request.resource.data.grams > 0
         && request.resource.data.grams < 100000

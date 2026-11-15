@@ -5,7 +5,22 @@ var APP_URL = "https://www.gstatic.com/firebasejs/" + FB_VER + "/firebase-app.js
 var FS_URL = "https://www.gstatic.com/firebasejs/" + FB_VER + "/firebase-firestore.js";
 
 var INTERVAL_DAYS = 7; // jak často se váží
-var NAMES = { buffy: "Buffy", otik: "Otík" };
+var TURTLES = [
+  { id: "buffy", name: "Buffy", sex: "♀", color: "var(--buffy)", marker: "circle", acc: "bow", where: "" },
+  { id: "otik", name: "Otík", sex: "♂", color: "var(--otik)", marker: "square", acc: "", where: "" },
+  { id: "cecik", name: "Cecík", sex: "♀", color: "var(--cecik)", marker: "triangle", acc: "flower", where: "ze školky" },
+  { id: "drobecek", name: "Drobeček", sex: "♂", color: "var(--drobecek)", marker: "diamond", acc: "", where: "ze školky" }
+];
+var NAMES = {};
+TURTLES.forEach(function (t) { NAMES[t.id] = t.name; });
+function turtleById(id) { for (var i = 0; i < TURTLES.length; i++) if (TURTLES[i].id === id) return TURTLES[i]; return TURTLES[1]; }
+function markerSvg(m, color, size) {
+  var h = size / 2, c = 'fill="' + color + '"';
+  if (m === "square") return '<rect x="' + (h * .25) + '" y="' + (h * .25) + '" width="' + (size * .75) + '" height="' + (size * .75) + '" rx="1.5" ' + c + '/>';
+  if (m === "triangle") return '<polygon points="' + h + ',' + (h * .1) + ' ' + (size * .95) + ',' + (size * .92) + ' ' + (size * .05) + ',' + (size * .92) + '" ' + c + '/>';
+  if (m === "diamond") return '<polygon points="' + h + ',' + (size * .05) + ' ' + (size * .95) + ',' + h + ' ' + h + ',' + (size * .95) + ' ' + (size * .05) + ',' + h + '" ' + c + '/>';
+  return '<circle cx="' + h + '" cy="' + h + '" r="' + (h * .85) + '" ' + c + '/>';
+}
 var SEED = [
   { id: "seed-buffy-20261114", turtle: "buffy", grams: 50, date: "2026-11-14", note: "", ts: 1794657090385 },
   { id: "seed-otik-20261114", turtle: "otik", grams: 53, date: "2026-11-14", note: "", ts: 1794657098182 }
@@ -32,8 +47,9 @@ function fmtG(n) { return (Math.round(n * 10) / 10).toString().replace(".", ",")
 function dayDiff(a, b) { return Math.round((a - b) / 86400000); }
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 function tort(k, cls) {
-  var kk = (k === "buffy" || k === "otik") ? k : "otik";
-  return '<svg class="' + kk + ' ' + (cls || "") + '" viewBox="0 0 120 80" aria-hidden="true"><use href="#tort"/>' + (kk === "buffy" ? '<use href="#bow"/>' : '') + '</svg>';
+  var t = turtleById(k);
+  var acc = t.acc === "bow" ? '<use href="#bow"/>' : (t.acc === "flower" ? '<use href="#flower"/>' : '');
+  return '<svg class="' + t.id + ' ' + (cls || "") + '" viewBox="0 0 120 80" aria-hidden="true"><use href="#tort"/>' + acc + '</svg>';
 }
 
 // ---------- kód domácnosti ----------
@@ -126,18 +142,28 @@ function render() {
   $("seedcard").hidden = !(backend && loaded && all.length === 0 && !seedDismissed());
 }
 
+function dueOf(mine) {
+  var d = parse(mine[mine.length - 1].date); d.setDate(d.getDate() + INTERVAL_DAYS); return d;
+}
+
 function renderDue(all) {
   var el = $("due");
   if (!loaded) { el.textContent = "Načítám…"; el.className = "due"; return; }
   if (!all.length) { el.textContent = "Zatím žádné vážení – přidej první."; el.className = "due"; return; }
-  var last = all[all.length - 1].date;
-  var due = parse(last); due.setDate(due.getDate() + INTERVAL_DAYS);
-  var left = dayDiff(due, parse(todayStr()));
-  var ds = due.getDate() + ". " + (due.getMonth() + 1) + ". " + due.getFullYear();
-  if (left > 1) { el.textContent = "Další vážení: " + ds + " (za " + left + " dní)"; el.className = "due ok"; }
-  else if (left === 1) { el.textContent = "Další vážení: zítra (" + ds + ")"; el.className = "due ok"; }
-  else if (left === 0) { el.textContent = "Další vážení: dnes!"; el.className = "due warn"; }
-  else { var o = -left; el.textContent = "Vážení je po termínu o " + o + (o === 1 ? " den" : (o < 5 ? " dny" : " dní")) + " (mělo být " + ds + ")"; el.className = "due warn"; }
+  var dues = [];
+  TURTLES.forEach(function (t) {
+    var mine = all.filter(function (e) { return e.turtle === t.id; });
+    if (mine.length) dues.push({ t: t, d: dueOf(mine) });
+  });
+  var first = dues.reduce(function (a, b) { return b.d < a.d ? b : a; });
+  var who = dues.filter(function (x) { return x.d.getTime() === first.d.getTime(); }).map(function (x) { return x.t.name; });
+  var suffix = who.length < dues.length ? " · " + who.join(", ") : "";
+  var left = dayDiff(first.d, parse(todayStr()));
+  var ds = first.d.getDate() + ". " + (first.d.getMonth() + 1) + ". " + first.d.getFullYear();
+  if (left > 1) { el.textContent = "Další vážení: " + ds + " (za " + left + " dní)" + suffix; el.className = "due ok"; }
+  else if (left === 1) { el.textContent = "Další vážení: zítra (" + ds + ")" + suffix; el.className = "due ok"; }
+  else if (left === 0) { el.textContent = "Další vážení: dnes!" + suffix; el.className = "due warn"; }
+  else { var o = -left; el.textContent = "Vážení je po termínu o " + o + (o === 1 ? " den" : (o < 5 ? " dny" : " dní")) + " (mělo být " + ds + ")" + suffix; el.className = "due warn"; }
 }
 
 // změna za 30 dní: porovná poslední vážení s tím, které je nejblíž 30 dnům před ním
@@ -160,11 +186,12 @@ function monthly(mine) {
 
 function renderCards(all) {
   var box = $("turtles"); box.innerHTML = "";
-  ["buffy", "otik"].forEach(function (k) {
+  TURTLES.forEach(function (t) {
+    var k = t.id;
     var mine = all.filter(function (e) { return e.turtle === k; });
     var c = document.createElement("div"); c.className = "t";
-    c.style.setProperty("--c", k === "buffy" ? "var(--buffy)" : "var(--otik)");
-    var h = tort(k) + '<div class="n">' + NAMES[k] + (k === "buffy" ? " ♀" : " ♂") + '</div>';
+    c.style.setProperty("--c", t.color);
+    var h = tort(k) + '<div class="n">' + t.name + " " + t.sex + '</div>' + (t.where ? '<div class="d">' + t.where + '</div>' : '');
     if (!mine.length) { h += '<div class="g">–</div><div class="d">zatím bez vážení</div>'; }
     else {
       var l = mine[mine.length - 1];
@@ -177,6 +204,8 @@ function renderCards(all) {
         d = '<span class="delta ' + cls + '">' + sign + fmtG(Math.abs(diff)) + ' g</span> · ';
       }
       h += '<div class="d">' + d + fmtShort(l.date) + '</div>';
+      var nd = dueOf(mine);
+      h += '<div class="d">příště ' + nd.getDate() + ". " + (nd.getMonth() + 1) + ".</div>";
       var m = monthly(mine);
       if (m) {
         var mc = m.perMonth > 0 ? "up" : (m.perMonth < 0 ? "down" : "");
@@ -210,15 +239,17 @@ function renderChart(all) {
   }
   s += '<text x="' + L + '" y="' + (H - 8) + '" font-size="10" fill="var(--mute)">' + fmtShort(all[0].date) + '</text>';
   s += '<text x="' + (W - R) + '" y="' + (H - 8) + '" text-anchor="end" font-size="10" fill="var(--mute)">' + fmtShort(all[all.length - 1].date) + '</text>';
-  [["buffy", "var(--buffy)", false], ["otik", "var(--otik)", true]].forEach(function (cfg) {
-    var mine = all.filter(function (e) { return e.turtle === cfg[0]; });
+  TURTLES.forEach(function (t) {
+    var mine = all.filter(function (e) { return e.turtle === t.id; });
     if (!mine.length) return;
     var pts = mine.map(function (e) { return X(e.date).toFixed(1) + "," + Y(e.grams).toFixed(1); }).join(" ");
-    s += '<polyline points="' + pts + '" fill="none" stroke="' + cfg[1] + '" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>';
+    s += '<polyline points="' + pts + '" fill="none" stroke="' + t.color + '" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>';
     mine.forEach(function (e) {
-      var x = X(e.date), y = Y(e.grams);
-      s += cfg[2] ? '<rect x="' + (x - 3.5) + '" y="' + (y - 3.5) + '" width="7" height="7" rx="1.5" fill="' + cfg[1] + '"/>'
-        : '<circle cx="' + x + '" cy="' + y + '" r="4" fill="' + cfg[1] + '"/>';
+      var x = X(e.date), y = Y(e.grams), f = 'fill="' + t.color + '"';
+      if (t.marker === "square") s += '<rect x="' + (x - 3.5) + '" y="' + (y - 3.5) + '" width="7" height="7" rx="1.5" ' + f + '/>';
+      else if (t.marker === "triangle") s += '<polygon points="' + x + ',' + (y - 5) + ' ' + (x + 5) + ',' + (y + 4) + ' ' + (x - 5) + ',' + (y + 4) + '" ' + f + '/>';
+      else if (t.marker === "diamond") s += '<polygon points="' + x + ',' + (y - 5) + ' ' + (x + 5) + ',' + y + ' ' + x + ',' + (y + 5) + ' ' + (x - 5) + ',' + y + '" ' + f + '/>';
+      else s += '<circle cx="' + x + '" cy="' + y + '" r="4" ' + f + '/>';
     });
   });
   s += '</svg>';
@@ -255,10 +286,18 @@ $("dd").value = todayStr();
 var dateDirty = false;
 $("dd").addEventListener("input", function () { dateDirty = true; });
 function defaultDate(all) {
-  if (!all.length) return todayStr();
-  var d = parse(all[all.length - 1].date); d.setDate(d.getDate() + INTERVAL_DAYS);
-  return ymd(d);
+  var tid = $("tt").value;
+  var mine = all.filter(function (e) { return e.turtle === tid; });
+  if (!mine.length) return todayStr();
+  return ymd(dueOf(mine));
 }
+(function fillForm() {
+  $("tt").innerHTML = TURTLES.map(function (t) { return '<option value="' + t.id + '">' + t.name + '</option>'; }).join("");
+  $("legend").innerHTML = TURTLES.map(function (t) {
+    return '<span style="color:var(--mute)"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">' + markerSvg(t.marker, t.color, 12) + '</svg>' + t.name + '</span>';
+  }).join("");
+  $("tt").addEventListener("change", function () { if (!dateDirty) $("dd").value = defaultDate(sorted()); });
+})();
 $("f").addEventListener("submit", function (ev) {
   ev.preventDefault();
   if (!backend) return;
