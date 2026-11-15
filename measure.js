@@ -38,7 +38,7 @@ function renderCards() {
   TURTLES.forEach(function (t) {
     var m = mine(t.id), c = document.createElement("div");
     c.className = "t"; c.style.setProperty("--c", t.color);
-    var h = tort(t.id) + '<div class="n">' + t.name + " " + t.sex + '</div>';
+    var h = tort(t.id) + '<div class="n">' + t.name + " " + t.sex + '</div>' + (t.where ? '<div class="d">' + t.where + '</div>' : '');
     if (!m.length) h += '<div class="g">–</div><div class="d">zatím neměřena</div>';
     else {
       var l = m[m.length - 1];

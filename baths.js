@@ -13,7 +13,7 @@ function render() {
   TURTLES.forEach(function (t) {
     var m = mine(t.id).map(function (e) { return e.date; }).sort();
     var c = document.createElement("div"); c.className = "t"; c.style.setProperty("--c", t.color);
-    var h = tort(t.id) + '<div class="n">' + t.name + " " + t.sex + '</div>';
+    var h = tort(t.id) + '<div class="n">' + t.name + " " + t.sex + '</div>' + (t.where ? '<div class="d">' + t.where + '</div>' : '');
     if (!m.length) h += '<div class="g">–</div><div class="d">' + (loaded ? "zatím nekoupána" : "načítám…") + '</div>';
     else {
       var last = m[m.length - 1], ago = dayDiff(today, parse(last));
