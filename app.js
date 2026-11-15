@@ -278,7 +278,15 @@ $("f").addEventListener("submit", function (ev) {
 function shareLink(code) { return location.origin + location.pathname + "#k=" + code; }
 
 function showSettings(code) {
-  $("settings").hidden = false;
+  // Nastavení sdílení je schované, otevře se až tlačítkem dole (kód se běžně nepotřebuje).
+  var tg = $("togglesettings");
+  tg.hidden = false;
+  tg.onclick = function () {
+    var box = $("settings");
+    box.hidden = !box.hidden;
+    tg.textContent = box.hidden ? "⚙ Sdílení a kód" : "⚙ Skrýt sdílení";
+    if (!box.hidden) box.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
   $("codeshow").value = prettyCode(code);
   $("copylink").onclick = function () {
     var link = shareLink(code), m = $("settingsmsg");
