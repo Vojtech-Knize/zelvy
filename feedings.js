@@ -2,7 +2,7 @@
 import { $, TURTLES, NAMES, tort, esc, todayStr, parse, ymd, fmt, fmtDow, fmtDowYear, dayDiff, daysWord,
   lsGet, lsSet, periodFrom, periodLabel, segment, turtleChips, selectedTurtles, delButton, flash } from "./common.js";
 
-var FOODS = ["Suché krmení", "Polníček", "Rukola", "Čínské zelí", "Okurka", "Paprika", "Hroznové víno"];
+var FOODS = ["Suché krmení", "Polníček", "Rukola", "Čínské zelí", "Okurka", "Paprika", "Hroznové víno", "Jablíčko"];
 var FEED_DOW = [1, 3, 5]; // pondělí, středa, pátek
 var LS_CUSTOM = "zelvy-vlastni-krmeni";
 
