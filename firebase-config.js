@@ -1,15 +1,10 @@
-// Sem přijde konfigurace z Firebase (Project settings → Your apps → Web app → firebaseConfig).
-// Dokud je tu null, aplikace funguje jen lokálně v tomto zařízení.
-// Tyto údaje nejsou tajné, ochranu dat řeší pravidla databáze (viz firestore.rules).
-export const firebaseConfig = null;
-
-/* Příklad:
+// Konfigurace Firebase projektu "zelvy".
+// Tyto údaje nejsou tajné (identifikují jen projekt), data chrání pravidla databáze (viz firestore.rules).
 export const firebaseConfig = {
-  apiKey: "...",
-  authDomain: "...firebaseapp.com",
-  projectId: "...",
-  storageBucket: "...",
-  messagingSenderId: "...",
-  appId: "..."
+  apiKey: "AIzaSyAAM3rMnoFspTie0G0i1oRlDlawAvsROcw",
+  authDomain: "zelvy-edb98.firebaseapp.com",
+  projectId: "zelvy-edb98",
+  storageBucket: "zelvy-edb98.firebasestorage.app",
+  messagingSenderId: "1071238880007",
+  appId: "1:1071238880007:web:9f7b9bbceaa023e33bc3a2"
 };
-*/
