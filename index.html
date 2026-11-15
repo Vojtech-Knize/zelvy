@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vážení želv – Buffy a Otík</title>
+<meta name="theme-color" content="#fdf3e3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Želvy">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+:root{
+  --bg:#fdf3e3;--bg2:#f8e4c6;--card:#fffaf1;--ink:#4b2e1a;--mute:#8a6a50;--line:#efd9bd;
+  --buffy:#d9531e;--otik:#5f8a2d;--ok:#4f8a2b;--warn:#c2410c;--accent:#b94a1f;--onaccent:#fff;
+  --shadow:0 2px 10px rgba(120,70,20,.10);
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#241810;--bg2:#2d1e14;--card:#33241a;--ink:#fbead4;--mute:#c7a98a;--line:#4a3526;
+  --buffy:#ff8a50;--otik:#a8c96a;--ok:#a8d672;--warn:#ff9a6b;--accent:#e0794a;--onaccent:#2a160a;
+  --shadow:0 2px 10px rgba(0,0,0,.35);
+}}
+[hidden]{display:none!important}
+.buffy{--shell:#d98a4a;--rim:#a45a2a;--skin:#ecc58f}
+.otik{--shell:#8fa24a;--rim:#5f6f2a;--skin:#cfd79a}
+.hero-t{--shell:#c47a3a;--rim:#8f5320;--skin:#e6bd82}
+*{box-sizing:border-box}
+body{margin:0 auto;max-width:520px;min-height:100vh;color:var(--ink);
+  padding:calc(16px + env(safe-area-inset-top)) 14px calc(28px + env(safe-area-inset-bottom));
+  font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:linear-gradient(180deg,var(--bg2) 0,var(--bg) 220px) no-repeat,var(--bg)}
+.hero{display:flex;align-items:center;gap:10px;margin:2px 0 12px}
+.hero svg{width:104px;flex:none}
+h1{font-size:24px;margin:0;line-height:1.1}
+.sub{color:var(--mute);font-size:14px;margin-top:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow)}
+.due{font-weight:700}
+.due.ok{color:var(--ok)}.due.warn{color:var(--warn)}
+.turtles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.t{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:10px 12px 12px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.t::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:var(--c)}
+.t svg{width:92px;display:block;margin:6px 0 2px}
+.t .n{font-weight:700}.t .g{font-size:28px;font-weight:800;margin:2px 0;color:var(--c)}
+.t .d{font-size:13px;color:var(--mute)}
+.mo{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.mo b{font-size:18px}
+.delta.up{color:var(--ok)}.delta.down{color:var(--warn)}
+form{display:grid;gap:10px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row.auto{grid-template-columns:1fr auto;margin-top:12px}
+label{font-size:13px;color:var(--mute);display:block;margin-bottom:3px}
+input,select{width:100%;font:inherit;padding:11px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px}
+button{font:inherit;border:0;border-radius:12px;padding:12px;background:var(--accent);color:var(--onaccent);font-weight:700;cursor:pointer}
+button:disabled{opacity:.6}
+button.ghost{background:transparent;color:var(--mute);padding:6px 9px;font-weight:500;font-size:13px;border:1px solid var(--line)}
+button.ghost.sure{color:var(--warn);border-color:var(--warn)}
+button.ghost.big{padding:12px;font-size:16px}
+h2{font-size:16px;margin:0 0 8px}
+.legend{display:flex;gap:14px;font-size:13px;color:var(--mute);margin-bottom:4px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c);margin-right:5px}
+.legend span.sq::before{border-radius:2px}
+#chart svg{width:100%;height:auto;display:block}
+.hist{list-style:none;margin:0;padding:0}
+.hist li{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.hist li:first-child{border-top:0}
+.hist .mini{width:38px;flex:none}
+.hist .m{flex:1;min-width:0}
+.hist .note{font-size:12px;color:var(--mute);overflow-wrap:anywhere}
+.empty{text-align:center;color:var(--mute);font-size:14px;padding:6px 0}
+.empty svg{width:90px;display:block;margin:0 auto 4px;opacity:.9}
+.msg{font-size:13px;color:var(--mute);margin:6px 0}
+.err{color:var(--warn)}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.5px}
+.foot{margin-top:18px;text-align:center;color:var(--mute);font-size:13px}
+.foot svg.walk{width:100%;max-width:340px;display:block;margin:0 auto 4px}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="tort" viewBox="0 0 120 80">
+      <ellipse cx="66" cy="68" rx="7" ry="8" fill="var(--skin)" opacity=".75"/>
+      <ellipse cx="44" cy="68" rx="7" ry="8" fill="var(--skin)" opacity=".75"/>
+      <path d="M22 62 L8 66 L22 69 Z" fill="var(--skin)"/>
+      <ellipse cx="97" cy="54" rx="13" ry="9" fill="var(--skin)"/>
+      <circle cx="102" cy="48" r="11" fill="var(--skin)"/>
+      <ellipse cx="82" cy="67" rx="8" ry="8.5" fill="var(--skin)"/>
+      <ellipse cx="30" cy="67" rx="8" ry="8.5" fill="var(--skin)"/>
+      <path d="M20 64 C20 26 88 26 88 64 Z" fill="var(--shell)"/>
+      <path d="M54 38 L66 46 L62 58 L46 58 L42 46 Z" fill="none" stroke="var(--rim)" stroke-width="2" stroke-linejoin="round" opacity=".7"/>
+      <path d="M54 38 L54 33 M66 46 L78 41 M62 58 L72 62 M46 58 L36 62 M42 46 L30 41" fill="none" stroke="var(--rim)" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+      <rect x="16" y="60" width="76" height="8" rx="4" fill="var(--rim)"/>
+      <circle cx="106" cy="46" r="2.2" fill="#3a2414"/>
+      <circle cx="106.8" cy="45.3" r=".7" fill="#fff"/>
+      <circle cx="102" cy="53" r="2.8" fill="#f2988a" opacity=".55"/>
+      <path d="M105 54 q3.5 3 7 -.5" fill="none" stroke="#3a2414" stroke-width="1.5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="bow" viewBox="0 0 120 80">
+      <path d="M99 37 L90 31 L90 43 Z" fill="#e8647c"/>
+      <path d="M99 37 L108 31 L108 43 Z" fill="#e8647c"/>
+      <circle cx="99" cy="37" r="3.2" fill="#c9425c"/>
+    </symbol>
+    <symbol id="grass" viewBox="0 0 24 20">
+      <path d="M3 20 Q4 10 1 4 Q7 9 8 20 M10 20 Q10 8 12 1 Q15 9 14 20 M16 20 Q18 11 23 6 Q21 14 20 20" fill="#7fa04a" opacity=".85"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="hero">
+  <svg class="hero-t" viewBox="0 0 120 80" role="img" aria-label="Želva"><use href="#tort"/></svg>
+  <div>
+    <h1>Vážení želv</h1>
+    <div class="sub">Buffy a Otík · vážíme každých 14 dní</div>
+  </div>
+</div>
+
+<div class="card" id="setup" hidden>
+  <h2>Propojení telefonů</h2>
+  <p class="msg">Oba telefony musí mít stejný kód. Na prvním ho vytvoř, na druhém zadej (nebo otevři odkaz, který ti první telefon vygeneruje).</p>
+  <button type="button" id="newcode">Vytvořit nový kód</button>
+  <div class="row auto">
+    <input id="codein" class="code" placeholder="Mám kód z druhého telefonu" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button type="button" id="joincode">Připojit</button>
+  </div>
+  <div id="setupmsg" class="msg"></div>
+</div>
+
+<div class="card"><span id="due" class="due">Načítám…</span><div id="status" class="msg"></div></div>
+
+<div class="card" id="seedcard" hidden>
+  <h2>Přenést první vážení</h2>
+  <p class="msg">V databázi zatím nic není. Nahrát vážení z 14. 11. z prototypu (Buffy 50 g, Otík 53 g)?</p>
+  <button type="button" id="doseed">Nahrát</button>
+</div>
+
+<div class="turtles" id="turtles"></div>
+
+<div class="card">
+  <h2>Přidat vážení</h2>
+  <form id="f">
+    <div class="row">
+      <div><label for="tt">Želva</label>
+        <select id="tt"><option value="buffy">Buffy</option><option value="otik">Otík</option></select></div>
+      <div><label for="gg">Váha (g)</label>
+        <input id="gg" type="number" inputmode="decimal" step="0.1" min="0" placeholder="např. 142" required></div>
+    </div>
+    <div class="row">
+      <div><label for="dd">Datum</label><input id="dd" type="date" required></div>
+      <div><label for="nn">Poznámka</label><input id="nn" type="text" maxlength="80" placeholder="nepovinné"></div>
+    </div>
+    <button type="submit" id="btn">Uložit</button>
+    <div id="formmsg" class="msg"></div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Vývoj váhy</h2>
+  <div class="legend"><span style="--c:var(--buffy)">Buffy</span><span class="sq" style="--c:var(--otik)">Otík</span></div>
+  <div id="chart"></div>
+</div>
+
+<div class="card">
+  <h2>Historie</h2>
+  <ul class="hist" id="hist"></ul>
+</div>
+
+<div class="card" id="settings" hidden>
+  <h2>Sdílení s druhým telefonem</h2>
+  <p class="msg">Kód domácnosti. Zadej ho v aplikaci na druhém telefonu, nebo tam pošli odkaz.</p>
+  <input id="codeshow" class="code" readonly>
+  <div class="row auto">
+    <button type="button" id="copylink">Zkopírovat odkaz</button>
+    <button type="button" id="leave" class="ghost big">Odpojit</button>
+  </div>
+  <div id="settingsmsg" class="msg"></div>
+</div>
+
+<div class="foot">
+  <svg class="walk" viewBox="0 0 340 64" aria-hidden="true">
+    <svg x="0" y="0" width="24" height="20" viewBox="0 0 24 20"><use href="#grass"/></svg>
+    <svg x="40" y="26" width="24" height="20" viewBox="0 0 24 20"><use href="#grass"/></svg>
+    <svg class="buffy" x="70" y="10" width="92" height="61" viewBox="0 0 120 80"><use href="#tort"/><use href="#bow"/></svg>
+    <svg x="170" y="30" width="24" height="20" viewBox="0 0 24 20"><use href="#grass"/></svg>
+    <svg class="otik" x="205" y="22" width="72" height="48" viewBox="0 0 120 80"><use href="#tort"/></svg>
+    <svg x="300" y="4" width="24" height="20" viewBox="0 0 24 20"><use href="#grass"/></svg>
+    <path d="M0 62 H340" stroke="#a9885f" stroke-width="2" stroke-linecap="round" opacity=".35"/>
+  </svg>
+  Pomalu, ale jistě 🐢
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Data domácnosti jsou pod dlouhým náhodným kódem, který zná jen rodina.
+    // Seznam domácností (kolekce "households") si nikdo načíst nemůže.
+    match /households/{hid}/weights/{id} {
+      allow get, list: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['turtle','grams','date','note','ts'])
+        && request.resource.data.turtle in ['buffy','otik']
+        && request.resource.data.grams is number
+        && request.resource.data.grams > 0
+        && request.resource.data.grams < 100000
+        && request.resource.data.date is string
+        && request.resource.data.date.size() == 10
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 100
+        && request.resource.data.ts is number;
+      allow delete: if true;
+    }
+  }
+}
