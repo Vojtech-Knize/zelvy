@@ -1,9 +1,8 @@
-// Záložka Krmení: krmí se v pondělí, středu a pátek; výběr z nabídky + vlastní krmení.
+// Záložka Krmení: krmení jde zapsat každý den; výběr z nabídky + vlastní krmení.
 import { $, TURTLES, NAMES, tort, esc, todayStr, parse, ymd, fmt, fmtDow, fmtDowYear, dayDiff, daysWord,
   lsGet, lsSet, periodFrom, periodLabel, segment, turtleChips, selectedTurtles, delButton, flash } from "./common.js";
 
 var FOODS = ["Suché krmení", "Polníček", "Rukola", "Čínské zelí", "Okurka", "Paprika", "Hroznové víno", "Jablíčko"];
-var FEED_DOW = [1, 3, 5]; // pondělí, středa, pátek
 var LS_CUSTOM = "zelvy-vlastni-krmeni";
 
 var store = null, list = [], loaded = false, period = "m";
@@ -11,12 +10,12 @@ var selT = {}, selF = {}, custom = [], slotDirty = false;
 TURTLES.forEach(function (t) { selT[t.id] = true; });
 try { custom = JSON.parse(lsGet(LS_CUSTOM) || "[]"); } catch (x) { custom = []; }
 
-function isFeedDay(d) { return FEED_DOW.indexOf(d.getDay()) >= 0; }
+function isFeedDay() { return true; } // krmení jde zapsat každý den
 
-// dny krmení od (dnes − 14 dní) do (dnes + 3 dny), nejnovější nahoře
+// dny od (dnes − 14 dní) do dneška, nejnovější nahoře
 function slots() {
   var out = [], t = parse(todayStr());
-  for (var i = 3; i >= -14; i--) {
+  for (var i = 0; i >= -14; i--) {
     var d = new Date(t.getFullYear(), t.getMonth(), t.getDate() + i);
     if (isFeedDay(d)) out.push(ymd(d));
   }
@@ -61,8 +60,8 @@ function renderNext() {
   if (!loaded) { el.textContent = "Načítám…"; el.className = "due"; return; }
   if (isFeedDay(today)) {
     var n = doneCount(ts);
-    if (n >= TURTLES.length) { el.textContent = "Dnes je krmení – už zapsáno ✓"; el.className = "due ok"; }
-    else { el.textContent = "Dnes je krmení!" + (n ? " (zapsáno " + n + " z " + TURTLES.length + ")" : ""); el.className = "due warn"; }
+    if (n >= TURTLES.length) { el.textContent = "Dnes zapsáno ✓"; el.className = "due ok"; }
+    else { el.textContent = "Dnes ještě nezapsáno" + (n ? " (zapsáno " + n + " z " + TURTLES.length + ")" : ""); el.className = "due warn"; }
     return;
   }
   for (var i = 1; i <= 7; i++) {

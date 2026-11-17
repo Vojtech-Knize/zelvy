@@ -382,7 +382,7 @@ function tabErr(id, what) {
 var TAB_SUB = {
   weigh: "Buffy, Otík, Cecík a Drobeček · vážíme jednou týdně",
   bath: "Koupání · zapiš, kdy která želva byla ve vodě",
-  feed: "Krmení · pondělí, středa a pátek",
+  feed: "Krmení · zapiš, čím jsi želvy nakrmil",
   meas: "Měření v cm · jednou za 3 měsíce"
 };
 function showTab(id) {
