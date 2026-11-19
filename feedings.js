@@ -77,7 +77,7 @@ function renderNext() {
 function renderChart(inP, from) {
   var box = $("feedchart");
   if (!inP.length) { box.innerHTML = '<div class="empty">' + tort("otik") + 'Graf se zobrazí po prvním zápisu krmení.</div>'; return; }
-  var weekly = period !== "m", today = parse(todayStr()), start = parse(from);
+  var weekly = period === "h" || period === "y", today = parse(todayStr()), start = parse(from);
   function key(d) { // sloupec: den, nebo pondělí daného týdne
     if (!weekly) return ymd(d);
     var x = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7));

@@ -46,6 +46,8 @@ export function daysWord(n) { return n === 1 ? "den" : (n >= 2 && n <= 4 ? "dny"
 
 // ---------- období (měsíc / půlrok / rok, počítáno zpět od dneška) ----------
 export var PERIODS = [
+  { id: "w", label: "Týden", days: 7 },
+  { id: "w2", label: "2 týdny", days: 14 },
   { id: "m", label: "Měsíc", months: 1 },
   { id: "h", label: "Půlrok", months: 6 },
   { id: "y", label: "Rok", months: 12 }
@@ -53,12 +55,13 @@ export var PERIODS = [
 export function periodFrom(id) {
   var p = PERIODS.filter(function (x) { return x.id === id; })[0] || PERIODS[0];
   var now = new Date();
+  if (p.days) return ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() - (p.days - 1)));
   var y = now.getFullYear(), m = now.getMonth() - p.months, day = now.getDate();
   var dim = new Date(y, m + 1, 0).getDate(); // počet dní v cílovém měsíci
   return ymd(new Date(y, m, Math.min(day, dim)));
 }
 export function periodLabel(id) {
-  return { m: "za poslední měsíc", h: "za poslední půlrok", y: "za poslední rok" }[id];
+  return { w: "za poslední týden", w2: "za poslední 2 týdny", m: "za poslední měsíc", h: "za poslední půlrok", y: "za poslední rok" }[id];
 }
 export function segment(box, initial, onChange) {
   box.innerHTML = PERIODS.map(function (p) {
