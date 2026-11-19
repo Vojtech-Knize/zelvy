@@ -1,5 +1,5 @@
 // Záložka Krmení: krmení jde zapsat každý den; výběr z nabídky + vlastní krmení.
-import { $, TURTLES, NAMES, tort, esc, todayStr, parse, ymd, fmt, fmtDow, fmtDowYear, dayDiff, daysWord,
+import { $, TURTLES, NAMES, tort, esc, todayStr, parse, ymd, fmt, fmtShort, fmtDow, fmtDowYear, dayDiff, daysWord,
   lsGet, lsSet, periodFrom, periodLabel, segment, turtleChips, selectedTurtles, delButton, flash } from "./common.js";
 
 var FOODS = ["Suché krmení", "Polníček", "Rukola", "Čínské zelí", "Okurka", "Paprika", "Hroznové víno", "Jablíčko"];
@@ -73,6 +73,57 @@ function renderNext() {
   }
 }
 
+// graf: řádky = krmení, sloupce = dny (měsíc) nebo týdny (půlrok, rok); sytost = v kolika dnech se podávalo
+function renderChart(inP, from) {
+  var box = $("feedchart");
+  if (!inP.length) { box.innerHTML = '<div class="empty">' + tort("otik") + 'Graf se zobrazí po prvním zápisu krmení.</div>'; return; }
+  var weekly = period !== "m", today = parse(todayStr()), start = parse(from);
+  function key(d) { // sloupec: den, nebo pondělí daného týdne
+    if (!weekly) return ymd(d);
+    var x = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7));
+    return ymd(x);
+  }
+  var cols = [], seen = {};
+  for (var d = new Date(start); d <= today; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+    var k = key(d);
+    if (!seen[k]) { seen[k] = cols.length; cols.push(k); }
+  }
+  var per = {}, days = {}; // krmení -> sloupec -> množina dnů
+  inP.forEach(function (e) {
+    if (e.date > ymd(today)) return;
+    var c = seen[key(parse(e.date))];
+    if (c == null) return;
+    (e.foods || []).forEach(function (f) {
+      per[f] = per[f] || {}; (per[f][c] = per[f][c] || {})[e.date] = 1;
+    });
+  });
+  var foods = Object.keys(per).sort(function (a, b) {
+    var ta = Object.keys(per[a]).reduce(function (n, c) { return n + Object.keys(per[a][c]).length; }, 0);
+    var tb = Object.keys(per[b]).reduce(function (n, c) { return n + Object.keys(per[b][c]).length; }, 0);
+    return tb - ta;
+  });
+  if (!foods.length) { box.innerHTML = '<div class="empty">' + tort("otik") + 'V tomto období není zapsané žádné krmení.</div>'; return; }
+  var W = 340, LW = 92, RH = 20, TOP = 4, H = TOP + foods.length * RH + 22;
+  var cw = (W - LW - 2) / cols.length;
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Graf krmení v čase">';
+  foods.forEach(function (f, r) {
+    var y = TOP + r * RH, label = f.length > 14 ? f.slice(0, 13) + "…" : f;
+    svg += '<text x="' + (LW - 6) + '" y="' + (y + 14) + '" text-anchor="end" font-size="11" fill="var(--ink)">' + esc(label) + '</text>';
+    svg += '<rect x="' + LW + '" y="' + (y + 2) + '" width="' + (W - LW - 2) + '" height="' + (RH - 4) + '" rx="3" fill="var(--line)" opacity=".45"/>';
+    cols.forEach(function (k, c) {
+      var n = per[f][c] ? Object.keys(per[f][c]).length : 0;
+      if (!n) return;
+      var op = weekly ? Math.max(.3, n / 7) : 1;
+      svg += '<rect x="' + (LW + c * cw + .5) + '" y="' + (y + 2) + '" width="' + Math.max(cw - 1, 1) + '" height="' + (RH - 4) + '" rx="2" fill="var(--otik)" opacity="' + op.toFixed(2) + '"/>';
+    });
+  });
+  var ay = TOP + foods.length * RH + 14;
+  svg += '<text x="' + LW + '" y="' + ay + '" font-size="10" fill="var(--mute)">' + fmtShort(from) + '</text>';
+  svg += '<text x="' + (W - 2) + '" y="' + ay + '" text-anchor="end" font-size="10" fill="var(--mute)">' + fmtShort(ymd(today)) + '</text>';
+  box.innerHTML = svg + '</svg>';
+  $("feedchartnote").textContent = weekly ? "Jeden sloupec = týden, sytost = počet dní, kdy se podávalo." : "Jeden sloupec = den.";
+}
+
 function render() {
   renderNext();
   drawSlots();
@@ -80,6 +131,7 @@ function render() {
 
   var from = periodFrom(period);
   var inP = list.filter(function (e) { return e.date >= from; });
+  renderChart(inP, from);
   $("feedperiod").textContent = "Krmení " + periodLabel(period) + " (od " + fmt(from) + ")";
 
   // kolikrát se v období objevilo které krmení (počítá se dny, ne zápisy)
