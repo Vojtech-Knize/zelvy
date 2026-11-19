@@ -5,7 +5,7 @@ import { $, TURTLES, NAMES, tort, esc, todayStr, parse, ymd, fmt, fmtShort, fmtD
 var FOODS = ["Suché krmení", "Polníček", "Rukola", "Čínské zelí", "Okurka", "Paprika", "Hroznové víno", "Jablíčko"];
 var LS_CUSTOM = "zelvy-vlastni-krmeni";
 
-var store = null, list = [], loaded = false, period = "m";
+var store = null, list = [], loaded = false, period = "w"; // přehled se otevírá na Týdnu
 var selT = {}, selF = {}, custom = [], slotDirty = false;
 TURTLES.forEach(function (t) { selT[t.id] = true; });
 try { custom = JSON.parse(lsGet(LS_CUSTOM) || "[]"); } catch (x) { custom = []; }
@@ -103,9 +103,17 @@ function renderChart(inP, from) {
     return tb - ta;
   });
   if (!foods.length) { box.innerHTML = '<div class="empty">' + tort("otik") + 'V tomto období není zapsané žádné krmení.</div>'; return; }
-  var W = 340, LW = 92, RH = 20, TOP = 4, H = TOP + foods.length * RH + 22;
+  var W = 340, LW = 92, RH = 20, TOP = weekly ? 4 : 18, H = TOP + foods.length * RH + 22;
   var cw = (W - LW - 2) / cols.length;
   var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Graf krmení v čase">';
+  if (!weekly) { // popisky dnů nad sloupci (u měsíce jen pondělky, ať se vejdou)
+    var names = ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"], fs = cw >= 14 ? 10 : 8;
+    cols.forEach(function (k, c) {
+      var dow = parse(k).getDay(), t = names[dow];
+      if (cw < 14 && dow !== 1) return; // u měsíce se vejdou jen pondělky
+      svg += '<text x="' + (LW + c * cw + cw / 2) + '" y="12" text-anchor="middle" font-size="' + fs + '" fill="var(--mute)"' + (dow === 1 ? ' font-weight="700"' : '') + '>' + t + '</text>';
+    });
+  }
   foods.forEach(function (f, r) {
     var y = TOP + r * RH, label = f.length > 14 ? f.slice(0, 13) + "…" : f;
     svg += '<text x="' + (LW - 6) + '" y="' + (y + 14) + '" text-anchor="end" font-size="11" fill="var(--ink)">' + esc(label) + '</text>';
