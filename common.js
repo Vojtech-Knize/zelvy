@@ -52,17 +52,28 @@ export var PERIODS = [
   { id: "h", label: "Půlrok", months: 6 },
   { id: "y", label: "Rok", months: 12 }
 ];
+function mondayOf(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7)); }
+// Období začíná vždy v pondělí a končí nedělí aktuálního týdne.
 export function periodFrom(id) {
   var p = PERIODS.filter(function (x) { return x.id === id; })[0] || PERIODS[0];
-  var now = new Date();
-  if (p.days) return ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() - (p.days - 1)));
-  var y = now.getFullYear(), m = now.getMonth() - p.months, day = now.getDate();
-  var dim = new Date(y, m + 1, 0).getDate(); // počet dní v cílovém měsíci
-  return ymd(new Date(y, m, Math.min(day, dim)));
+  var now = new Date(), start;
+  if (id === "w") start = now;
+  else if (id === "w2") start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+  else {
+    var y = now.getFullYear(), m = now.getMonth() - p.months, day = now.getDate();
+    var dim = new Date(y, m + 1, 0).getDate(); // počet dní v cílovém měsíci
+    start = new Date(y, m, Math.min(day, dim));
+  }
+  return ymd(mondayOf(start));
+}
+export function periodTo() {
+  var m = mondayOf(new Date());
+  return ymd(new Date(m.getFullYear(), m.getMonth(), m.getDate() + 6));
 }
 export function periodLabel(id) {
-  return { w: "za poslední týden", w2: "za poslední 2 týdny", m: "za poslední měsíc", h: "za poslední půlrok", y: "za poslední rok" }[id];
+  return { w: "tento týden", w2: "poslední 2 týdny", m: "poslední měsíc", h: "poslední půlrok", y: "poslední rok" }[id];
 }
+export function periodRange(id) { return fmt(periodFrom(id)) + " – " + fmt(periodTo()); }
 export function segment(box, initial, onChange) {
   box.innerHTML = PERIODS.map(function (p) {
     return '<button type="button" data-p="' + p.id + '"' + (p.id === initial ? ' class="on"' : '') + '>' + p.label + '</button>';

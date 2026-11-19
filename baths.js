@@ -1,6 +1,6 @@
 // Záložka Koupání: jen záznam data koupání ke každé želvě, bez intervalu.
 import { $, TURTLES, NAMES, tort, esc, todayStr, parse, fmt, fmtShort, fmtDow, fmtDowYear, dayDiff, daysWord,
-  periodFrom, periodLabel, segment, turtleChips, selectedTurtles, delButton, flash } from "./common.js";
+  periodFrom, periodTo, periodLabel, periodRange, segment, turtleChips, selectedTurtles, delButton, flash } from "./common.js";
 
 var store = null, list = [], loaded = false, period = "m", sel = {};
 
@@ -24,15 +24,15 @@ function render() {
   });
 
   // přehled za zvolené období
-  var from = periodFrom(period);
-  var inP = list.filter(function (e) { return e.date >= from; }).sort(function (a, b) {
+  var from = periodFrom(period), to = periodTo();
+  var inP = list.filter(function (e) { return e.date >= from && e.date <= to; }).sort(function (a, b) {
     return a.date !== b.date ? (a.date < b.date ? 1 : -1) : (b.ts || 0) - (a.ts || 0);
   });
   $("bathsum").innerHTML = TURTLES.map(function (t) {
     var n = inP.filter(function (e) { return e.turtle === t.id; }).length;
     return '<span class="pill" style="--c:' + t.color + '"><b>' + esc(t.name) + '</b> ' + n + '×</span>';
   }).join("");
-  $("bathperiod").textContent = "Koupání " + periodLabel(period) + " (od " + fmt(from) + ")";
+  $("bathperiod").textContent = "Koupání – " + periodLabel(period) + " (" + periodRange(period) + ")";
 
   var ul = $("bathhist"); ul.innerHTML = "";
   if (!inP.length) { ul.innerHTML = '<li style="display:block"><div class="empty">' + tort("otik") + 'V tomto období zatím žádné koupání.</div></li>'; return; }

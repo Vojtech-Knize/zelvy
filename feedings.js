@@ -1,6 +1,6 @@
 // Záložka Krmení: krmení jde zapsat každý den; výběr z nabídky + vlastní krmení.
 import { $, TURTLES, NAMES, tort, esc, todayStr, parse, ymd, fmt, fmtShort, fmtDow, fmtDowYear, dayDiff, daysWord,
-  lsGet, lsSet, periodFrom, periodLabel, segment, turtleChips, selectedTurtles, delButton, flash } from "./common.js";
+  lsGet, lsSet, periodFrom, periodTo, periodLabel, periodRange, segment, turtleChips, selectedTurtles, delButton, flash } from "./common.js";
 
 var FOODS = ["Suché krmení", "Polníček", "Rukola", "Čínské zelí", "Okurka", "Paprika", "Hroznové víno", "Jablíčko"];
 var LS_CUSTOM = "zelvy-vlastni-krmeni";
@@ -77,7 +77,7 @@ function renderNext() {
 function renderChart(inP, from) {
   var box = $("feedchart");
   if (!inP.length) { box.innerHTML = '<div class="empty">' + tort("otik") + 'Graf se zobrazí po prvním zápisu krmení.</div>'; return; }
-  var weekly = period === "h" || period === "y", today = parse(todayStr()), start = parse(from);
+  var weekly = period === "h" || period === "y", today = parse(periodTo()), start = parse(from); // konec = neděle aktuálního týdne
   function key(d) { // sloupec: den, nebo pondělí daného týdne
     if (!weekly) return ymd(d);
     var x = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7));
@@ -129,10 +129,10 @@ function render() {
   drawSlots();
   drawFoods();
 
-  var from = periodFrom(period);
-  var inP = list.filter(function (e) { return e.date >= from; });
+  var from = periodFrom(period), to = periodTo();
+  var inP = list.filter(function (e) { return e.date >= from && e.date <= to; });
   renderChart(inP, from);
-  $("feedperiod").textContent = "Krmení " + periodLabel(period) + " (od " + fmt(from) + ")";
+  $("feedperiod").textContent = "Krmení – " + periodLabel(period) + " (" + periodRange(period) + ")";
 
   // kolikrát se v období objevilo které krmení (počítá se dny, ne zápisy)
   var days = {}, perFood = {};
