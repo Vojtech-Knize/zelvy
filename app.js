@@ -398,7 +398,7 @@ $("tabs").addEventListener("click", function (e) {
   var b = e.target.closest("button");
   if (b) { showTab(b.dataset.tab); window.scrollTo(0, 0); }
 });
-showTab(lsGet("zelvy-tab"));
+showTab("feed"); // aplikace se vždy otevře na Krmení (první záložka)
 initBaths();
 initFeedings();
 initMeasure();
