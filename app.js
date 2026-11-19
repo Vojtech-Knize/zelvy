@@ -3,6 +3,7 @@ import { APP_URL, FS_URL, TURTLES, NAMES, turtleById, markerSvg, $, lsGet, lsSet
 import { initBaths, startBaths } from "./baths.js";
 import { initFeedings, startFeedings } from "./feedings.js";
 import { initMeasure, startMeasure } from "./measure.js";
+import { initSpray, startSpray } from "./spray.js";
 
 
 var INTERVAL_DAYS = 7; // jak často se váží
@@ -42,8 +43,8 @@ function codeFromHash() {
 
 // ---------- úložiště ----------
 // backend.store(název) vrátí sadu záznamů (weights / baths / feedings) se stejným rozhraním.
-var LS_KEYS = { weights: LS_ENTRIES, baths: "zelvy-koupani-v1", measurements: "zelvy-mereni-v1", feedings: "zelvy-krmeni-v1" };
-var ERR_EL = { weights: "formmsg", baths: "bathmsg", feedings: "feedmsg", measurements: "measmsg" };
+var LS_KEYS = { weights: LS_ENTRIES, baths: "zelvy-koupani-v1", measurements: "zelvy-mereni-v1", sprayings: "zelvy-roseni-v1", feedings: "zelvy-krmeni-v1" };
+var ERR_EL = { weights: "formmsg", baths: "bathmsg", feedings: "feedmsg", measurements: "measmsg", sprayings: "spraymsg" };
 
 function localBackend() {
   return {
@@ -67,6 +68,7 @@ function localBackend() {
 var CLEAN = {
   weights: function (r) { return { turtle: r.turtle, grams: r.grams, date: r.date, note: r.note || "", ts: r.ts || Date.now() }; },
   baths: function (r) { return { turtle: r.turtle, date: r.date, note: r.note || "", ts: r.ts || Date.now() }; },
+  sprayings: function (r) { return { date: r.date, note: r.note || "", ts: r.ts || Date.now() }; },
   measurements: function (r) { return { turtle: r.turtle, cm: r.cm, date: r.date, note: r.note || "", ts: r.ts || Date.now() }; },
   feedings: function (r) { return { turtle: r.turtle, date: r.date, foods: (r.foods || []).slice(0, 20), note: r.note || "", ts: r.ts || Date.now() }; }
 };
@@ -368,6 +370,7 @@ function attach() {
   startBaths(backend.store("baths"), tabErr("bathmsg", "Koupání"));
   startFeedings(backend.store("feedings"), tabErr("feedmsg", "Krmení"));
   startMeasure(backend.store("measurements"), tabErr("measmsg", "Měření"));
+  startSpray(backend.store("sprayings"), tabErr("spraymsg", "Rosení"));
 }
 function tabErr(id, what) {
   return function (e) {
@@ -383,6 +386,7 @@ var TAB_SUB = {
   weigh: "Buffy, Otík, Cecík a Drobeček · vážíme jednou týdně",
   bath: "Koupání · zapiš, kdy která želva byla ve vodě",
   feed: "Krmení · zapiš, čím jsi želvy nakrmil",
+  spray: "Rosení · kdy se rosilo želvárium",
   meas: "Měření v cm · jednou za 3 měsíce"
 };
 function showTab(id) {
@@ -402,6 +406,7 @@ showTab("feed"); // aplikace se vždy otevře na Krmení (první záložka)
 initBaths();
 initFeedings();
 initMeasure();
+initSpray();
 
 async function start() {
   render();
