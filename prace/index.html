@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hledání práce</title>
+<meta name="theme-color" content="#4f46e5">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Práce">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{--bg:#eef3fb;--card:#fff;--ink:#1b2236;--mut:#5f6b85;--line:#dde4f0;--acc:#4f46e5;--acc2:#e9e8ff;--warn:#c2570c;--bad:#c62828;--ok:#15803d;--c1:#4f46e5;--c2:#0ea5e9;--c3:#f59e0b;--c4:#10b981}
+@media(prefers-color-scheme:dark){:root{--bg:#12152a;--card:#1b2040;--ink:#eef0fb;--mut:#a3abc8;--line:#2d3459;--acc:#8b87ff;--acc2:#2a2d5c;--warn:#f5a45a;--bad:#ff8a80;--ok:#5fd68a;--c1:#8b87ff;--c2:#38bdf8;--c3:#fbbf24;--c4:#34d399}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 14px calc(90px + env(safe-area-inset-bottom))}
+h1{font-size:22px;margin:4px 0 2px}
+.sub{color:var(--mut);font-size:13px;margin-bottom:14px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.stat b{display:block;font-size:22px}
+.stat span{color:var(--mut);font-size:12px}
+.bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 10px;width:100%}
+.bar input{flex:1;min-width:140px;width:auto}.bar select{width:auto}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+button.del{color:var(--bad)}
+.item{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.name{font-weight:650;font-size:16px}
+.pos{color:var(--mut);font-size:13px}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.tag{font-size:12px;padding:2px 9px;border-radius:99px;background:var(--acc2);color:var(--acc);white-space:nowrap}
+.tag.g{background:rgba(120,120,120,.15);color:var(--mut)}
+.tag.ok{background:rgba(21,128,61,.14);color:var(--ok)}
+.tag.bad{background:rgba(180,35,24,.13);color:var(--bad)}
+.tag.warn{background:rgba(180,83,9,.14);color:var(--warn)}
+.rows{font-size:13.5px;color:var(--ink)}
+.rows div{margin:2px 0}.rows i{color:var(--mut);font-style:normal}
+.next{margin-top:8px;padding:8px 10px;background:var(--acc2);border-radius:10px;font-size:13.5px}
+.next.late{background:rgba(180,83,9,.14)}
+.act{display:flex;gap:8px;margin-top:10px}.act button{padding:6px 12px;font-size:13px}
+.empty{text-align:center;color:var(--mut);padding:40px 10px}
+.fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));box-shadow:0 4px 14px rgba(0,0,0,.25);padding:13px 20px;border-radius:99px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:14px;z-index:9}
+.modal.on{display:flex}
+.sheet{background:var(--bg);border-radius:16px;max-width:560px;width:100%;padding:16px;margin:auto}
+.sheet h2{margin:0 0 10px;font-size:18px}
+label{display:block;font-size:12.5px;color:var(--mut);margin:10px 0 3px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.round{border:1px dashed var(--line);border-radius:12px;padding:8px 10px;margin-top:8px}
+.round h4{margin:0 0 2px;font-size:13px}
+.foot{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.charts{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:14px}
+.charts summary{cursor:pointer;font-weight:600}
+.cg{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:10px}
+.cc h4{margin:0 0 6px;font-size:13px;color:var(--mut);font-weight:600}
+.br{display:flex;align-items:center;gap:8px;font-size:12.5px;margin:4px 0}
+.bl{width:92px;flex:none;color:var(--mut)}
+.bt{flex:1;background:var(--acc2);border-radius:6px;height:12px;overflow:hidden}
+.bf{height:100%;background:var(--acc);border-radius:6px}
+.bn{width:26px;text-align:right;font-weight:600}
+.rs{margin-top:8px;font-size:13.5px}.rs summary{cursor:pointer;color:var(--acc);font-weight:600}.rs div{margin-top:4px}
+@media(max-width:560px){.cg{grid-template-columns:1fr}}
+.note{font-size:12px;color:var(--mut);margin-top:18px;text-align:center}
+.backup{display:flex;gap:8px;justify-content:center;margin-top:10px}
+.backup button{font-size:13px;padding:7px 12px}
+.hero{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(135deg,#4f46e5,#0ea5e9);color:#fff;border-radius:18px;padding:16px 18px;margin-bottom:14px;overflow:hidden}
+.hero h1{color:#fff;margin:0;font-size:24px}
+.hero .sub{margin:2px 0 0;color:rgba(255,255,255,.88)}
+.hero svg{width:140px;height:auto;flex:none}
+.stat{border-top:4px solid var(--c1)}
+.st0{background:linear-gradient(180deg,rgba(79,70,229,.12),var(--card))}
+.st1{border-top-color:var(--c2);background:linear-gradient(180deg,rgba(14,165,233,.12),var(--card))}
+.st2{border-top-color:var(--c3);background:linear-gradient(180deg,rgba(245,158,11,.14),var(--card))}
+.st3{border-top-color:var(--c4);background:linear-gradient(180deg,rgba(16,185,129,.13),var(--card))}
+button.pri{background:linear-gradient(135deg,#4f46e5,#0ea5e9);border-color:transparent}
+.item{border-left:5px solid var(--line)}
+.s-open{border-left-color:var(--c2)}.s-offer,.s-accepted{border-left-color:var(--c4)}.s-rejected{border-left-color:var(--bad)}.s-declined{border-left-color:var(--mut)}
+.bf{background:linear-gradient(90deg,var(--c1),var(--c2))}
+.tag.wm-o{background:rgba(14,165,233,.16);color:#0369a1}
+.tag.wm-h{background:rgba(245,158,11,.2);color:#92400e}
+.tag.wm-r{background:rgba(16,185,129,.16);color:#047857}
+@media(prefers-color-scheme:dark){.tag.wm-o{color:#7dd3fc}.tag.wm-h{color:#fcd34d}.tag.wm-r{color:#6ee7b7}}
+@media(max-width:560px){.hero svg{width:96px}}
+@media(max-width:560px){.stats{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero"><div><h1>Hledání práce</h1>
+  <div class="sub" id="sync">Ukládá se jen v tomto telefonu</div></div><svg viewBox="0 0 160 110" aria-hidden="true"><circle cx="128" cy="24" r="14" fill="#fbbf24"/><g fill="#fff" opacity=".28"><rect x="8" y="48" width="22" height="50"/><rect x="34" y="30" width="26" height="68"/><rect x="64" y="56" width="20" height="42"/><rect x="88" y="40" width="24" height="58"/></g><rect x="70" y="62" width="62" height="38" rx="4" fill="#1b2236"/><rect x="75" y="67" width="52" height="28" rx="2" fill="#38bdf8"/><path d="M90 81l6 6 12-13" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M62 100h78l-6 8H68z" fill="#e5e7eb"/><rect x="18" y="74" width="40" height="30" rx="5" fill="#f59e0b"/><path d="M30 74v-6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v6" fill="none" stroke="#b45309" stroke-width="3"/><rect x="18" y="86" width="40" height="3" fill="#b45309"/><rect x="35" y="84" width="6" height="7" rx="1" fill="#fde68a"/></svg></div>
+  <div class="stats" id="stats"></div>
+  <details class="charts" id="charts" open><summary>Grafy</summary><div id="chartBody"></div></details>
+  <div class="bar">
+    <input id="q" placeholder="Hledat firmu, pozici…">
+    <select id="f">
+      <option value="">Vše</option>
+      <option value="open">Probíhá</option>
+      <option value="offer">Nabídka</option>
+      <option value="no">Zamítnuto / ukončeno</option>
+    </select>
+    <select id="fc">
+      <option value="">HPP i IČO</option>
+      <option value="hpp">Jen HPP</option>
+      <option value="ico">Jen IČO</option></select><select id="fm"><option value="">Kancelář / hybrid / remote</option><option value="office">Jen kancelář</option><option value="hybrid">Jen hybrid</option><option value="remote">Jen full remote</option>
+    </select>
+  </div>
+  <div id="list"></div>
+  <div class="note">Data jsou uložená jen v tomto telefonu. Čas od času si udělej zálohu.</div>
+  <div class="backup"><button id="exp">Zálohovat (stáhnout)</button><button id="imp">Obnovit ze zálohy</button><input type="file" id="impf" accept="application/json,.json" hidden></div>
+</div>
+<button class="pri fab" id="add">+ Přidat</button>
+
+<div class="modal" id="m"><div class="sheet">
+  <h2 id="mt">Nová firma</h2>
+  <div class="two">
+    <div><label>Datum oslovení</label><input type="date" id="fDate"></div>
+    <div><label>Kdo koho oslovil</label>
+      <select id="fWho"><option value="me">Já jsem oslovil firmu</option><option value="them">Firma oslovila mě</option></select></div>
+  </div>
+  <div class="two">
+    <div><label>Jméno firmy / agentury</label><input id="fName" placeholder="např. Acme s.r.o."></div>
+    <div><label>Typ</label>
+      <select id="fType"><option value="firma">Firma (přímo)</option><option value="agentura">Agentura</option></select></div>
+  </div>
+  <div class="two">
+    <div><label>Pozice</label><input id="fPos" placeholder="např. KAM"></div>
+    <div><label>Kontakt / odkaz</label><input id="fContact" placeholder="e-mail, tel., inzerát"></div>
+  </div>
+  <label>Forma spolupráce</label>
+  <select id="fContract"><option value="">Neuvedeno</option><option value="hpp">HPP</option><option value="ico">IČO</option><option value="both">HPP i IČO</option></select>
+  <label>Typ práce</label>
+  <select id="fMode"><option value="">Neuvedeno</option><option value="office">Kancelář</option><option value="hybrid">Hybrid</option><option value="remote">Full remote</option></select>
+  <label>Výsledek náboru</label>
+  <select id="fOutcome"><option value="">Zatím nic</option><option value="offer">Nabídka</option><option value="fuck">Fuck</option></select>
+  <label>Pohovory</label>
+  <div id="rounds"></div>
+  <div class="two" style="margin-top:6px">
+    <div><label>Celkový stav</label>
+      <select id="fStatus">
+        <option value="open">Probíhá</option><option value="offer">Nabídka</option>
+        <option value="accepted">Přijato</option><option value="rejected">Zamítnuto firmou</option>
+        <option value="declined">Odmítl jsem já</option>
+      </select></div>
+    <div><label>Požadovaný fix (Kč / měsíc)</label><input type="number" id="fSalary" inputmode="numeric" placeholder="např. 70000"></div>
+  </div>
+  <div class="two">
+    <div><label>Další krok</label><input id="fNext" placeholder="např. čekám na zpětnou vazbu"></div>
+    <div><label>Kdy (další krok)</label><input type="date" id="fNextDate"></div>
+  </div>
+  <label>Poznámky</label>
+  <textarea id="fNote" rows="3"></textarea>
+  <label>Research o firmě (poznámky)</label>
+  <textarea id="fResearch" rows="6" placeholder="Co firma dělá, sídlo, počet zaměstnanců, pobočka v Praze, obrat…"></textarea>
+  <div class="foot"><button id="cancel">Zrušit</button><button class="pri" id="save">Uložit</button></div>
+</div></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
+const fmtD=d=>{if(!d)return'';const[y,m,dd]=d.split('-');return `${+dd}. ${+m}. ${y}`};
+const money=n=>n?Number(n).toLocaleString('cs-CZ')+' Kč':'';
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const STATUS={open:['Probíhá',''],offer:['Nabídka','ok'],accepted:['Přijato','ok'],rejected:['Zamítnuto firmou','bad'],declined:['Odmítl jsem já','g']};
+const RES={'':'— čeká se —',pass:'Postupuju dál',fail:'Neúspěch',offer:'Nabídka'};
+const WM={office:['Kancelář','wm-o'],hybrid:['Hybrid','wm-h'],remote:['Full remote','wm-r']};
+let items=[],editing=null;
+const today=new Date().toISOString().slice(0,10);
+
+/* ---------- storage (localStorage v telefonu) ---------- */
+const KEY='hp_items';
+function lsLoad(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}}
+function lsSave(){try{localStorage.setItem(KEY,JSON.stringify(items))}catch(e){$('#sync').textContent='Chyba ukládání'}}
+function initStore(){
+  items=lsLoad();
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+  render();
+}
+function put(it){
+  const i=items.findIndex(x=>x.id===it.id);
+  if(i>=0)items[i]=it;else items.push(it);
+  lsSave();render();
+}
+function remove(id){items=items.filter(x=>x.id!==id);lsSave();render()}
+
+/* ---------- záloha ---------- */
+function exportData(){
+  const blob=new Blob([JSON.stringify({app:'hledani-prace',exported:new Date().toISOString(),items},null,1)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='hledani-prace-'+today+'.json';document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+}
+function importData(file){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);const arr=Array.isArray(d)?d:d.items;
+      if(!Array.isArray(arr))throw 0;
+      if(!confirm('Nahradit současná data ('+items.length+' záznamů) zálohou ('+arr.length+' záznamů)?'))return;
+      items=arr.filter(x=>x&&x.id);lsSave();render();
+    }catch(e){alert('Soubor se nepodařilo načíst.')}
+  };
+  r.readAsText(file);
+}
+
+/* ---------- render ---------- */
+function render(){
+  const q=$('#q').value.toLowerCase(),f=$('#f').value,fc=$('#fc').value,fm=$('#fm').value;
+  const open=items.filter(i=>i.status==='open').length;
+  const iv=items.reduce((n,i)=>n+(i.rounds||[]).filter(r=>r.date||r.form).length,0);
+  const offers=items.filter(i=>i.status==='offer'||i.status==='accepted').length;
+  $('#stats').innerHTML=[[items.length,'oslovených'],[open,'probíhá'],[iv,'pohovorů'],[offers,'nabídek']]
+    .map(([n,l],k)=>`<div class="stat st${k}"><b>${n}</b><span>${l}</span></div>`).join('');
+  drawCharts();
+  let list=items.filter(i=>{
+    if(fc&&!(i.contract===fc||i.contract==='both'))return false;
+    if(fm&&i.workmode!==fm)return false;
+    if(q&&!((i.name||'')+(i.pos||'')+(i.note||'')).toLowerCase().includes(q))return false;
+    if(f==='open')return i.status==='open';
+    if(f==='offer')return i.status==='offer'||i.status==='accepted';
+    if(f==='no')return i.status==='rejected'||i.status==='declined';
+    return true;
+  }).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(!list.length){$('#list').innerHTML=`<div class="empty">${items.length?'Nic nenalezeno.':'Zatím tu nic není. Klikni na „+ Přidat“.'}</div>`;return}
+  $('#list').innerHTML=list.map(i=>{
+    const st=STATUS[i.status]||STATUS.open;
+    const late=i.nextDate&&i.nextDate<today&&i.status==='open';
+    const rounds=(i.rounds||[]).map((r,n)=>({r,n:n+1})).filter(x=>x.r.form||x.r.date||x.r.result)
+      .map(({r,n})=>`<div><i>${n}. kolo:</i> ${r.form==='osobne'?'osobně':r.form==='online'?'online':'—'}${r.date?' · '+fmtD(r.date):''}${r.result?' · <b>'+RES[r.result]+'</b>':''}</div>`).join('');
+    return `<div class="item s-${i.status||'open'}">
+      <div class="top"><div><div class="name">${esc(i.name)}</div><div class="pos">${esc(i.pos)}</div></div>
+      <span class="tag ${st[1]}">${st[0]}</span></div>
+      <div class="tags"><span class="tag g">${i.type==='agentura'?'Agentura':'Firma'}</span>
+      <span class="tag g">${i.who==='them'?'Oslovili mě':'Oslovil jsem já'}</span>
+      ${i.date?`<span class="tag g">${fmtD(i.date)}</span>`:''}
+      ${i.contract?`<span class="tag">${{hpp:'HPP',ico:'IČO',both:'HPP i IČO'}[i.contract]}</span>`:''}
+      ${i.outcome==='offer'?`<span class="tag ok">Nabídka</span>`:i.outcome==='fuck'?`<span class="tag bad">Fuck</span>`:''}
+      ${i.workmode&&WM[i.workmode]?`<span class="tag ${WM[i.workmode][1]}">${WM[i.workmode][0]}</span>`:''}
+      ${i.salary?`<span class="tag">Fix: ${money(i.salary)}</span>`:''}</div>
+      <div class="rows">${rounds}${i.contact?`<div><i>Kontakt:</i> ${esc(i.contact)}</div>`:''}${i.note?`<div><i>Poznámka:</i> ${esc(i.note)}</div>`:''}</div>
+      ${i.research?`<details class="rs"><summary>Research o firmě</summary><div>${esc(i.research).replace(/\n/g,'<br>')}</div></details>`:''}
+      ${i.next||i.nextDate?`<div class="next ${late?'late':''}"><b>Další krok:</b> ${esc(i.next)}${i.nextDate?' — '+fmtD(i.nextDate):''}${late?' (po termínu)':''}</div>`:''}
+      <div class="act"><button data-e="${i.id}">Upravit</button><button class="del" data-d="${i.id}">Smazat</button></div>
+    </div>`}).join('');
+}
+
+/* ---------- charts ---------- */
+function bars(rows){const max=Math.max(1,...rows.map(r=>r[1]));return rows.map(([l,n])=>`<div class="br"><span class="bl">${l}</span><div class="bt"><div class="bf" style="width:${n/max*100}%"></div></div><span class="bn">${n}</span></div>`).join('')}
+function monday(s){const x=new Date(s+'T12:00:00');x.setDate(x.getDate()-((x.getDay()+6)%7));return x.toISOString().slice(0,10)}
+function drawCharts(){
+  const el=$('#chartBody');if(!el)return;
+  if(!items.length){el.innerHTML='<div class="empty">Zatím není co zobrazit.</div>';return}
+  const rd=(i,n)=>{const r=(i.rounds||[])[n]||{};return r.form||r.date||r.result};
+  const funnel=[['Osloveno',items.length],['1. kolo',items.filter(i=>rd(i,0)).length],['2. kolo',items.filter(i=>rd(i,1)).length],['3. kolo',items.filter(i=>rd(i,2)).length],['Nabídka',items.filter(i=>i.status==='offer'||i.status==='accepted').length]];
+  const wk=[];let m=new Date(monday(today)+'T12:00:00');
+  for(let k=0;k<8;k++){wk.unshift(m.toISOString().slice(0,10));m.setDate(m.getDate()-7)}
+  const weekly=wk.map(w=>{const d=w.split('-');return [`${+d[2]}. ${+d[1]}.`,items.filter(i=>i.date&&monday(i.date)===w).length]});
+  const cnt=(f)=>items.filter(f).length;
+  const who=[['Já firmě',cnt(i=>i.who!=='them')],['Firma mně',cnt(i=>i.who==='them')]];
+  const typ=[['Firma',cnt(i=>i.type!=='agentura')],['Agentura',cnt(i=>i.type==='agentura')]];
+  const con=[['HPP',cnt(i=>i.contract==='hpp')],['IČO',cnt(i=>i.contract==='ico')],['HPP i IČO',cnt(i=>i.contract==='both')],['Neuvedeno',cnt(i=>!i.contract)]];
+  const wmc=[['Kancelář',cnt(i=>i.workmode==='office')],['Hybrid',cnt(i=>i.workmode==='hybrid')],['Full remote',cnt(i=>i.workmode==='remote')],['Neuvedeno',cnt(i=>!i.workmode)]];
+  const stt=Object.entries(STATUS).map(([k,v])=>[v[0],cnt(i=>(i.status||'open')===k)]);
+  const sal=items.map(i=>+i.salary).filter(x=>x>0);
+  const salTxt=sal.length?`<div class="cc"><h4>Požadovaný fix</h4><div style="font-size:13.5px">Průměr <b>${money(Math.round(sal.reduce((a,b)=>a+b,0)/sal.length))}</b><br>Rozpětí ${money(Math.min(...sal))} – ${money(Math.max(...sal))}<br><span style="color:var(--mut)">z ${sal.length} záznamů</span></div></div>`:'';
+  el.innerHTML=`<div class="cg">
+    <div class="cc"><h4>Cesta k nabídce</h4>${bars(funnel)}</div>
+    <div class="cc"><h4>Oslovení za posledních 8 týdnů</h4>${bars(weekly)}</div>
+    <div class="cc"><h4>Kdo koho oslovil</h4>${bars(who)}<h4 style="margin-top:10px">Firma vs. agentura</h4>${bars(typ)}</div>
+    <div class="cc"><h4>Forma spolupráce</h4>${bars(con)}</div>
+    <div class="cc"><h4>Typ práce</h4>${bars(wmc)}</div>
+    <div class="cc"><h4>Stav</h4>${bars(stt)}</div>
+    ${salTxt}</div>`;
+}
+
+/* ---------- form ---------- */
+function roundHtml(n,r){
+  r=r||{};
+  return `<div class="round"><h4>${n}. kolo</h4><div class="two">
+    <div><label>Forma</label><select data-r="form"><option value="">—</option><option value="osobne"${r.form==='osobne'?' selected':''}>Osobně</option><option value="online"${r.form==='online'?' selected':''}>Online</option></select></div>
+    <div><label>Datum</label><input type="date" data-r="date" value="${r.date||''}"></div></div>
+    <label>Výsledek</label><select data-r="result">${Object.entries(RES).map(([k,v])=>`<option value="${k}"${r.result===k?' selected':''}>${v}</option>`).join('')}</select></div>`;
+}
+function openForm(it){
+  editing=it?it.id:null;
+  it=it||{};
+  $('#mt').textContent=it.id?'Upravit záznam':'Nová firma';
+  $('#fDate').value=it.date||today;$('#fWho').value=it.who||'me';
+  $('#fName').value=it.name||'';$('#fType').value=it.type||'firma';
+  $('#fPos').value=it.pos||'';$('#fContact').value=it.contact||'';$('#fContract').value=it.contract||'';$('#fMode').value=it.workmode||'';$('#fOutcome').value=it.outcome||'';
+  $('#fStatus').value=it.status||'open';$('#fSalary').value=it.salary||'';
+  $('#fNext').value=it.next||'';$('#fNextDate').value=it.nextDate||'';$('#fNote').value=it.note||'';$('#fResearch').value=it.research||'';
+  const rs=it.rounds||[];
+  $('#rounds').innerHTML=[0,1,2].map(n=>roundHtml(n+1,rs[n])).join('');
+  $('#m').classList.add('on');
+}
+function closeForm(){$('#m').classList.remove('on')}
+function save(){
+  const name=$('#fName').value.trim();
+  if(!name){$('#fName').focus();return}
+  const rounds=[...document.querySelectorAll('#rounds .round')].map(el=>{
+    const o={};el.querySelectorAll('[data-r]').forEach(x=>o[x.dataset.r]=x.value);return o});
+  const old=items.find(x=>x.id===editing)||{};
+  const it={...old,id:editing||uid(),date:$('#fDate').value,who:$('#fWho').value,name,type:$('#fType').value,
+    pos:$('#fPos').value.trim(),contract:$('#fContract').value,workmode:$('#fMode').value,outcome:$('#fOutcome').value,contact:$('#fContact').value.trim(),rounds,status:$('#fStatus').value,
+    salary:$('#fSalary').value,next:$('#fNext').value.trim(),nextDate:$('#fNextDate').value,note:$('#fNote').value.trim(),research:$('#fResearch').value.trim()};
+  closeForm();put(it);
+}
+
+$('#add').onclick=()=>openForm();
+$('#cancel').onclick=closeForm;
+$('#save').onclick=save;
+$('#exp').onclick=exportData;
+$('#imp').onclick=()=>$('#impf').click();
+$('#impf').onchange=e=>{if(e.target.files[0])importData(e.target.files[0]);e.target.value=''};
+$('#m').addEventListener('click',e=>{if(e.target.id==='m')closeForm()});
+$('#q').oninput=render;$('#f').onchange=render;$('#fc').onchange=render;$('#fm').onchange=render;
+$('#list').addEventListener('click',e=>{
+  const ed=e.target.dataset.e,de=e.target.dataset.d;
+  if(ed)openForm(items.find(x=>x.id===ed));
+  if(de){
+    if(e.target.dataset.armed){remove(de)}
+    else{e.target.dataset.armed=1;e.target.textContent='Opravdu smazat?';setTimeout(()=>{e.target.dataset.armed='';e.target.textContent='Smazat'},3000)}
+  }
+});
+initStore();
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+</script>
+</body>
+</html>
