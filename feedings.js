@@ -73,63 +73,85 @@ function renderNext() {
   }
 }
 
-// graf: řádky = krmení, sloupce = dny (měsíc) nebo týdny (půlrok, rok); sytost = v kolika dnech se podávalo
-function renderChart(inP, from) {
-  var box = $("feedchart");
-  if (!inP.length) { box.innerHTML = '<div class="empty">' + tort("otik") + 'Graf se zobrazí po prvním zápisu krmení.</div>'; return; }
-  var weekly = period === "h" || period === "y", today = parse(periodTo()), start = parse(from); // konec = neděle aktuálního týdne
-  function key(d) { // sloupec: den, nebo pondělí daného týdne
-    if (!weekly) return ymd(d);
-    var x = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7));
-    return ymd(x);
-  }
-  var cols = [], seen = {};
-  for (var d = new Date(start); d <= today; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
-    var k = key(d);
-    if (!seen[k]) { seen[k] = cols.length; cols.push(k); }
-  }
-  var per = {}, days = {}; // krmení -> sloupec -> množina dnů
-  inP.forEach(function (e) {
-    if (e.date > ymd(today)) return;
-    var c = seen[key(parse(e.date))];
-    if (c == null) return;
-    (e.foods || []).forEach(function (f) {
-      per[f] = per[f] || {}; (per[f][c] = per[f][c] || {})[e.date] = 1;
-    });
+var PAL = ["#5f8a2d", "#d9531e", "#3d8fc4", "#c28a00", "#b8336a", "#7b61c4", "#2a9d8f", "#8d6e63", "#e07a5f", "#6c757d"];
+function colorOf(food) { var i = allFoods().indexOf(food); return PAL[(i < 0 ? 0 : i) % PAL.length]; }
+function mondayKey(s) { var d = parse(s); return ymd(new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7))); }
+function addDays(s, n) { var d = parse(s); return ymd(new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)); }
+
+// graf 1: posledních 14 dní; řádky = krmení, sloupce = dny
+function renderChart() {
+  var box = $("feedchart"), today = todayStr(), from = addDays(today, -13);
+  var inP = list.filter(function (e) { return e.date >= from && e.date <= today; });
+  if (!inP.length) { box.innerHTML = '<div class="empty">' + tort("otik") + 'V posledních 14 dnech není zapsané žádné krmení.</div>'; return; }
+  var cols = [], idx = {};
+  for (var i = 0; i < 14; i++) { var k = addDays(from, i); idx[k] = i; cols.push(k); }
+  var per = {};
+  inP.forEach(function (e) { (e.foods || []).forEach(function (f) { (per[f] = per[f] || {})[e.date] = 1; }); });
+  var foods = Object.keys(per).sort(function (a, b) { return Object.keys(per[b]).length - Object.keys(per[a]).length; });
+  var W = 340, LW = 92, RH = 20, TOP = 18, H = TOP + foods.length * RH + 22, cw = (W - LW - 2) / 14;
+  var names = ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"];
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Graf krmení za posledních 14 dní">';
+  cols.forEach(function (k, c) {
+    var dow = parse(k).getDay();
+    svg += '<text x="' + (LW + c * cw + cw / 2) + '" y="12" text-anchor="middle" font-size="10" fill="var(--mute)"' + (dow === 1 ? ' font-weight="700"' : '') + '>' + names[dow] + '</text>';
   });
-  var foods = Object.keys(per).sort(function (a, b) {
-    var ta = Object.keys(per[a]).reduce(function (n, c) { return n + Object.keys(per[a][c]).length; }, 0);
-    var tb = Object.keys(per[b]).reduce(function (n, c) { return n + Object.keys(per[b][c]).length; }, 0);
-    return tb - ta;
-  });
-  if (!foods.length) { box.innerHTML = '<div class="empty">' + tort("otik") + 'V tomto období není zapsané žádné krmení.</div>'; return; }
-  var W = 340, LW = 92, RH = 20, TOP = weekly ? 4 : 18, H = TOP + foods.length * RH + 22;
-  var cw = (W - LW - 2) / cols.length;
-  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Graf krmení v čase">';
-  if (!weekly) { // popisky dnů nad sloupci (u měsíce jen pondělky, ať se vejdou)
-    var names = ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"], fs = cw >= 14 ? 10 : 8;
-    cols.forEach(function (k, c) {
-      var dow = parse(k).getDay(), t = names[dow];
-      if (cw < 14 && dow !== 1) return; // u měsíce se vejdou jen pondělky
-      svg += '<text x="' + (LW + c * cw + cw / 2) + '" y="12" text-anchor="middle" font-size="' + fs + '" fill="var(--mute)"' + (dow === 1 ? ' font-weight="700"' : '') + '>' + t + '</text>';
-    });
-  }
   foods.forEach(function (f, r) {
     var y = TOP + r * RH, label = f.length > 14 ? f.slice(0, 13) + "…" : f;
     svg += '<text x="' + (LW - 6) + '" y="' + (y + 14) + '" text-anchor="end" font-size="11" fill="var(--ink)">' + esc(label) + '</text>';
     svg += '<rect x="' + LW + '" y="' + (y + 2) + '" width="' + (W - LW - 2) + '" height="' + (RH - 4) + '" rx="3" fill="var(--line)" opacity=".45"/>';
     cols.forEach(function (k, c) {
-      var n = per[f][c] ? Object.keys(per[f][c]).length : 0;
-      if (!n) return;
-      var op = weekly ? Math.max(.3, n / 7) : 1;
-      svg += '<rect x="' + (LW + c * cw + .5) + '" y="' + (y + 2) + '" width="' + Math.max(cw - 1, 1) + '" height="' + (RH - 4) + '" rx="2" fill="var(--otik)" opacity="' + op.toFixed(2) + '"/>';
+      if (!per[f][k]) return;
+      svg += '<rect x="' + (LW + c * cw + .5) + '" y="' + (y + 2) + '" width="' + (cw - 1) + '" height="' + (RH - 4) + '" rx="2" fill="' + colorOf(f) + '"/>';
     });
   });
   var ay = TOP + foods.length * RH + 14;
   svg += '<text x="' + LW + '" y="' + ay + '" font-size="10" fill="var(--mute)">' + fmtShort(from) + '</text>';
-  svg += '<text x="' + (W - 2) + '" y="' + ay + '" text-anchor="end" font-size="10" fill="var(--mute)">' + fmtShort(ymd(today)) + '</text>';
+  svg += '<text x="' + (W - 2) + '" y="' + ay + '" text-anchor="end" font-size="10" fill="var(--mute)">' + fmtShort(today) + '</text>';
   box.innerHTML = svg + '</svg>';
-  $("feedchartnote").textContent = weekly ? "Jeden sloupec = týden, sytost = počet dní, kdy se podávalo." : "Jeden sloupec = den.";
+}
+
+// graf 2: sloupcový, od prvního krmení po týdnech; sloupec = týden (Po–Ne), výška = dny podle krmení
+function renderTotals() {
+  var box = $("feedtotal"), leg = $("feedtotallegend"), note = $("feedtotalnote");
+  if (!list.length) { box.innerHTML = '<div class="empty">' + tort("otik") + 'Graf se zobrazí po prvním zápisu krmení.</div>'; leg.innerHTML = ""; note.textContent = ""; return; }
+  var first = list.reduce(function (m, e) { return e.date < m ? e.date : m; }, list[0].date);
+  var weeks = [], widx = {}, wk = mondayKey(first), last = mondayKey(todayStr());
+  for (; wk <= last; wk = addDays(wk, 7)) { widx[wk] = weeks.length; weeks.push(wk); }
+  var per = weeks.map(function () { return {}; }), total = {};
+  list.forEach(function (e) {
+    var w = widx[mondayKey(e.date)];
+    if (w == null) return;
+    (e.foods || []).forEach(function (f) { (per[w][f] = per[w][f] || {})[e.date] = 1; total[f] = (total[f] || 0) + 1; });
+  });
+  var foods = allFoods().filter(function (f) { return total[f]; });
+  var sums = per.map(function (p) { return Object.keys(p).reduce(function (n, f) { return n + Object.keys(p[f]).length; }, 0); });
+  var max = Math.max.apply(null, sums.concat([1]));
+  var W = 340, L = 26, R = 4, T = 8, H = 190, B = 24, ph = H - T - B, slot = (W - L - R) / weeks.length, bw = Math.min(slot - 1.5, 38);
+  function Y(v) { return T + (1 - v / max) * ph; }
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Sloupcový graf krmení po týdnech od začátku">';
+  [0, Math.ceil(max / 2), max].forEach(function (v, i, arr) {
+    if (i && v === arr[i - 1]) return;
+    svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="var(--line)"/>';
+    svg += '<text x="' + (L - 5) + '" y="' + (Y(v) + 4) + '" text-anchor="end" font-size="10" fill="var(--mute)">' + v + '</text>';
+  });
+  weeks.forEach(function (w, i) {
+    var x = L + i * slot + (slot - bw) / 2, acc = 0;
+    foods.forEach(function (f) {
+      var n = per[i][f] ? Object.keys(per[i][f]).length : 0;
+      if (!n) return;
+      var y1 = Y(acc + n), h = Y(acc) - y1;
+      svg += '<rect x="' + x.toFixed(1) + '" y="' + y1.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + Math.max(h - .6, .5).toFixed(1) + '" fill="' + colorOf(f) + '"/>';
+      acc += n;
+    });
+  });
+  var ay = H - 7;
+  svg += '<text x="' + L + '" y="' + ay + '" font-size="10" fill="var(--mute)">' + fmtShort(weeks[0]) + '</text>';
+  if (weeks.length > 1) svg += '<text x="' + (W - R) + '" y="' + ay + '" text-anchor="end" font-size="10" fill="var(--mute)">' + fmtShort(weeks[weeks.length - 1]) + '</text>';
+  box.innerHTML = svg + '</svg>';
+  leg.innerHTML = foods.map(function (f) {
+    return '<span style="display:inline-flex;align-items:center;gap:5px;font-size:13px"><i style="width:11px;height:11px;border-radius:3px;background:' + colorOf(f) + ';display:inline-block"></i>' + esc(f) + ' · ' + total[f] + '×</span>';
+  }).join("");
+  note.textContent = "Od " + fmt(first) + ". Jeden sloupec = týden (Po–Ne), výška = počet dní podle krmení.";
 }
 
 function render() {
@@ -139,7 +161,8 @@ function render() {
 
   var from = periodFrom(period), to = periodTo();
   var inP = list.filter(function (e) { return e.date >= from && e.date <= to; });
-  renderChart(inP, from);
+  renderChart();
+  renderTotals();
   $("feedperiod").textContent = "Krmení – " + periodLabel(period) + " (" + periodRange(period) + ")";
 
   // kolikrát se v období objevilo které krmení (počítá se dny, ne zápisy)
